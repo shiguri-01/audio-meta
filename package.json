@@ -3,12 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3000",
-    "start": "vite --port 3000",
-    "build": "vite build && tsc",
-    "serve": "vite preview",
-    "lint": "biome lint --write",
-    "fmt": "biome format --write"
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "dev:front": "vite --port 3000",
+    "build:front": "vite build && tsc",
+    "preview:front": "vite preview",
+    "lint:front": "biome lint --write",
+    "lint:back": "cargo clippy --manifest-path src-tauri/Cargo.toml",
+    "fmt:front": "biome format --write",
+    "fmt:back": "cargo fmt --manifest-path src-tauri/Cargo.toml",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.6",
@@ -20,6 +24,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.1.4",
+    "@tauri-apps/cli": "^2.7.1",
+    "@types/node": "^24.2.1",
     "lefthook": "^1.12.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.11",
