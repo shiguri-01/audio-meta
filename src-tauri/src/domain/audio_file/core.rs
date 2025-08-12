@@ -1,0 +1,234 @@
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use crate::domain::id3::{Album, Artists, Id3Tag, Id3TagPatch, Title};
+use crate::utils::error::{AudioFileError, ValidationError};
+
+// 同じモジュール内のため、相対パスで参照
+use super::audio_file_path::{AudioFileExtension, AudioFilePath};
+
+/// 音声ファイル
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AudioFile {
+    id: Uuid,
+    path: AudioFilePath,
+    id3_tag: Id3Tag,
+}
+
+impl AudioFile {
+    /// 新しいAudioFileエンティティを作成する
+    ///
+    /// # Arguments
+    /// * `path` - 音声ファイルのパス
+    /// * `id3_tag` - ID3タグ情報
+    ///
+    /// # Returns
+    /// 新しいAudioFileインスタンス
+    pub fn new(path: AudioFilePath, id3_tag: Id3Tag) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            path,
+            id3_tag,
+        }
+    }
+
+    /// 既存のIDでAudioFileエンティティを復元する
+    ///
+    /// データベースなどから復元する場合に使用
+    ///
+    /// # Arguments
+    /// * `id` - エンティティのID
+    /// * `path` - 音声ファイルのパス
+    /// * `id3_tag` - ID3タグ情報
+    ///
+    /// # Returns
+    /// 既存のIDを持つAudioFileインスタンス
+    #[allow(dead_code)]
+    pub fn restore(id: Uuid, path: AudioFilePath, id3_tag: Id3Tag) -> Self {
+        Self { id, path, id3_tag }
+    }
+
+    /// エンティティのIDを取得する
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+
+    /// ファイルパスを取得する
+    pub fn path(&self) -> &AudioFilePath {
+        &self.path
+    }
+
+    /// ファイルパスを更新した新しいインスタンスを返す
+    ///
+    /// エンティティの不変性を保つため、新しいインスタンスを返す
+    ///
+    /// # Arguments
+    /// * `new_path` - 新しいファイルパス
+    ///
+    /// # Returns
+    /// 更新されたAudioFileインスタンス
+    #[allow(dead_code)]
+    pub fn with_path(self, new_path: AudioFilePath) -> Self {
+        Self {
+            id: self.id,
+            path: new_path,
+            id3_tag: self.id3_tag,
+        }
+    }
+
+    /// ファイル名（拡張子なし）を取得する
+    ///
+    /// # Returns
+    /// ファイル名のOption
+    #[allow(dead_code)]
+    pub fn file_stem(&self) -> &str {
+        self.path.file_stem()
+    }
+
+    /// ファイル名（拡張子あり）を取得する
+    ///
+    /// # Returns
+    /// ファイル名のOption
+    #[allow(dead_code)]
+    pub fn file_name(&self) -> &str {
+        self.path.file_name()
+    }
+
+    /// ファイルの拡張子を取得する
+    ///
+    /// # Returns
+    /// ファイルの拡張子文字列のOption
+    #[allow(dead_code)]
+    pub fn extension(&self) -> &str {
+        self.path.extension().as_str()
+    }
+
+    /// ファイル移動のためのパスを更新
+    ///
+    /// リネームと違い、IDは保持される
+    ///
+    /// # Arguments
+    /// * `new_path` - 移動先のパス
+    ///
+    /// # Returns
+    /// パスが更新されたAudioFileインスタンス
+    #[allow(dead_code)]
+    pub fn move_to(self, new_path: AudioFilePath) -> Self {
+        self.with_path(new_path)
+    }
+
+    /// 新しいファイル名でリネーム
+    ///
+    /// 同じディレクトリ内でのファイル名変更
+    ///
+    /// # Arguments
+    /// * `new_filename` - 新しいファイル名（拡張子含む）
+    ///
+    /// # Returns
+    /// リネーム後のAudioFileインスタンス、またはエラー
+    #[allow(dead_code)]
+    pub fn rename_file(self, new_filename: &str) -> Result<Self, ValidationError> {
+        let mut new_path = (*self.path).clone();
+        new_path.set_file_name(new_filename);
+
+        let new_audio_path = AudioFilePath::new(new_path)?;
+        Ok(self.with_path(new_audio_path))
+    }
+
+    /// ディレクトリを移動
+    ///
+    /// ファイル名は保持してディレクトリのみ変更
+    ///
+    /// # Arguments
+    /// * `new_directory` - 新しいディレクトリパス
+    ///
+    /// # Returns
+    /// 移動後のAudioFileインスタンス、またはエラー
+    #[allow(dead_code)]
+    pub fn move_to_directory(
+        self,
+        new_directory: &std::path::Path,
+    ) -> Result<Self, AudioFileError> {
+        let new_path = new_directory.join(&self.path);
+        let new_audio_path = AudioFilePath::new(new_path)?;
+        Ok(self.with_path(new_audio_path))
+    }
+
+    /// サポートされている音声ファイル形式かどうかを判定する
+    ///
+    /// # Arguments
+    /// * `path` - ファイルパス
+    ///
+    /// # Returns
+    /// サポートされている場合はtrue
+    pub fn is_supported_audio_format(path: &std::path::Path) -> bool {
+        path.extension()
+            .and_then(|ext| ext.to_str())
+            .map(AudioFileExtension::is_valid)
+            .unwrap_or(false)
+    }
+
+    /// ID3タグを更新した新しいインスタンスを返す
+    ///
+    /// エンティティの不変性を保つため、新しいインスタンスを返す
+    ///
+    /// # Arguments
+    /// * `new_id3_tag` - 新しいID3タグ
+    ///
+    /// # Returns
+    /// 更新されたAudioFileインスタンス
+    fn with_id3_tag(self, new_id3_tag: Id3Tag) -> Self {
+        Self {
+            id: self.id,
+            path: self.path,
+            id3_tag: new_id3_tag,
+        }
+    }
+
+    pub fn has_id3_tag_changed(&self, other: &Self) -> bool {
+        self.id3_tag != other.id3_tag
+    }
+
+    pub fn title(&self) -> Option<&Title> {
+        self.id3_tag.title()
+    }
+    #[allow(dead_code)]
+    pub fn with_title(self, new_title: Option<Title>) -> Self {
+        let new_id3_tag = self.id3_tag.with_title(new_title);
+        self.with_id3_tag(new_id3_tag)
+    }
+
+    pub fn artists(&self) -> Option<&Artists> {
+        self.id3_tag.artists()
+    }
+    #[allow(dead_code)]
+    pub fn with_artists(self, new_artists: Option<Artists>) -> Self {
+        let new_id3_tag = self.id3_tag.with_artists(new_artists);
+        self.with_id3_tag(new_id3_tag)
+    }
+
+    pub fn album(&self) -> Option<&Album> {
+        self.id3_tag.album()
+    }
+    #[allow(dead_code)]
+    pub fn with_album(self, new_album: Option<Album>) -> Self {
+        let new_id3_tag = self.id3_tag.with_album(new_album);
+        self.with_id3_tag(new_id3_tag)
+    }
+
+    pub fn apply_patch(&self, patch: &AudioFilePatch) -> Self {
+        Self {
+            id: self.id,
+            path: patch.path.clone().unwrap_or(self.path.clone()),
+            id3_tag: match patch.id3_tag {
+                Some(ref id3_tag_patch) => self.id3_tag.apply_patch(id3_tag_patch),
+                None => self.id3_tag.clone(),
+            },
+        }
+    }
+}
+
+pub struct AudioFilePatch {
+    pub path: Option<AudioFilePath>,
+    pub id3_tag: Option<Id3TagPatch>,
+}
