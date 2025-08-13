@@ -32,37 +32,57 @@ impl Default for AudioFileFileSystemRepository {
     }
 }
 
+impl AudioFileFileSystemRepository {
+    fn update(existing_file: &AudioFile, audio_file: &AudioFile) -> Result<(), AudioFileError> {
+        let path_changed = existing_file.path() != audio_file.path();
+        let id3_tag_changed = audio_file.has_id3_tag_changed(existing_file);
+
+        if !path_changed && !id3_tag_changed {
+            return Ok(()); // 変更なし
+        }
+
+        // パスの更新
+        if path_changed {
+            // 移動前のパスが存在するか確認
+            if !existing_file.path().exists() {
+                return Err(AudioFileError::FileNotFound {
+                    path: existing_file.path().to_string_lossy().to_string(),
+                });
+            }
+
+            fs::rename(existing_file.path(), audio_file.path())?;
+        }
+
+        // ID3タグの更新
+        if id3_tag_changed {
+            if let Err(e) = audio_file.write_id3_tag_to_fs() {
+                // ID3タグの書き込みに失敗した場合、パスを元に戻す
+                if path_changed {
+                    // ロールバックがエラーとなる可能性もあるが、
+                    // 無視して、ID3タグ更新時のエラーを返す
+                    let _ = fs::rename(audio_file.path(), existing_file.path());
+                }
+                return Err(e);
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[async_trait::async_trait]
 impl AudioFileRepository for AudioFileFileSystemRepository {
     async fn save(&mut self, audio_file: &AudioFile) -> Result<(), AudioFileError> {
-        let current_state = self.get_current_state(audio_file.id()).cloned();
-
-        match current_state {
-            Some(existing_file) => {
-                // パスの更新
-                if existing_file.path() != audio_file.path() {
-                    // 古いパスが存在するか確認
-                    if !existing_file.path().exists() {
-                        return Err(AudioFileError::FileNotFound {
-                            path: existing_file.path().to_string_lossy().to_string(),
-                        });
-                    }
-
-                    fs::rename(existing_file.path(), audio_file.path())?;
-                }
-
-                // ID3タグの更新
-                if audio_file.has_id3_tag_changed(&existing_file) {
-                    audio_file.write_id3_tag_to_fs()?;
-                }
-            }
-            None => {
-                // とりあえずエラー
-                return Err(AudioFileError::FileNotFound {
-                    path: audio_file.path().to_string_lossy().to_string(),
-                });
-            }
-        }
+        if let Some(existing_file) = self.get_current_state(audio_file.id()) {
+            // 既存のファイルが見つかった場合、更新を行う
+            Self::update(existing_file, audio_file)?;
+        } else {
+            // TODO: 新規ファイルの作成
+            // とりあえずエラー
+            return Err(AudioFileError::FileNotFound {
+                path: audio_file.path().to_string_lossy().to_string(),
+            });
+        };
 
         self.cached_files
             .insert(audio_file.id(), audio_file.clone());
