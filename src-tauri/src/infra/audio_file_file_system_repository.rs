@@ -93,19 +93,7 @@ impl AudioFileRepository for AudioFileFileSystemRepository {
     }
 
     async fn find_by_id(&mut self, id: &Uuid) -> Result<Option<AudioFile>, AudioFileError> {
-        // キャッシュから検索
-        if let Some(file) = self.cached_files.get(id) {
-            return Ok(Some(file.clone()));
-        }
-
-        // ファイルシステムから検索
-        for file in self.cached_files.values() {
-            if &file.id() == id {
-                return Ok(Some(file.clone()));
-            }
-        }
-
-        Ok(None)
+        Ok(self.cached_files.get(id).cloned())
     }
 }
 
