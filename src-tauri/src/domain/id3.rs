@@ -4,6 +4,8 @@ use std::{collections::BTreeSet, ops::Deref};
 use crate::utils::error::ValidationError;
 
 /// ID3タグ
+///
+/// タイトル、アーティスト（複数可）、アルバムの情報を保持する
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Id3Tag {
     title: Option<Title>,
@@ -12,6 +14,12 @@ pub struct Id3Tag {
 }
 
 impl Id3Tag {
+    /// 新しいID3タグを作成する
+    ///
+    /// # Arguments
+    /// * `title` - タイトル
+    /// * `artists` - アーティスト
+    /// * `album` - アルバム
     pub fn new(title: Option<Title>, artists: Option<Artists>, album: Option<Album>) -> Self {
         Id3Tag {
             title,
@@ -47,6 +55,7 @@ impl Id3Tag {
         new_tag
     }
 
+    /// パッチを適用する
     pub fn apply_patch(&self, patch: &Id3TagPatch) -> Self {
         Id3Tag {
             title: patch.title.clone().unwrap_or(self.title.clone()),
@@ -56,6 +65,11 @@ impl Id3Tag {
     }
 }
 
+/// ID3タグの更新用パッチ
+///
+/// * `Some(Some(value))` - 値を更新
+/// * `Some(None)` - 値を削除
+/// * `None` - 変更なし
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Id3TagPatch {
     pub title: Option<Option<Title>>,
@@ -68,6 +82,9 @@ pub struct Id3TagPatch {
 pub struct Title(String);
 
 impl Title {
+    /// タイトルを作成する
+    ///
+    /// * 空文字列は使用不可
     pub fn new(value: &str) -> Result<Self, ValidationError> {
         let trimmed = value.trim();
         if trimmed.is_empty() {
@@ -90,6 +107,9 @@ impl Deref for Title {
 pub struct Artist(String);
 
 impl Artist {
+    /// アーティスト名を作成する
+    ///
+    /// * 空文字列は使用不可
     pub fn new(value: &str) -> Result<Self, ValidationError> {
         let trimmed = value.trim();
         if trimmed.is_empty() {
@@ -111,6 +131,10 @@ impl Deref for Artist {
 pub struct Artists(Vec<Artist>);
 
 impl Artists {
+    /// アーティストのリストを作成する
+    ///
+    /// * 重複を排除される
+    /// * 1人以上のアーティストが必要
     pub fn new(artists: Vec<Artist>) -> Result<Self, ValidationError> {
         // 重複を排除
         let unique_artists: BTreeSet<_> = artists.into_iter().collect();
@@ -144,6 +168,9 @@ impl Deref for Artists {
 pub struct Album(String);
 
 impl Album {
+    /// アルバムを作成する
+    ///
+    /// * 空文字列は使用不可
     pub fn new(value: &str) -> Result<Self, ValidationError> {
         let trimmed = value.trim();
         if trimmed.is_empty() {

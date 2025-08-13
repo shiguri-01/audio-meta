@@ -48,25 +48,14 @@ impl AudioFile {
         Self { id, path, id3_tag }
     }
 
-    /// エンティティのIDを取得する
     pub fn id(&self) -> Uuid {
         self.id
     }
 
-    /// ファイルパスを取得する
     pub fn path(&self) -> &AudioFilePath {
         &self.path
     }
 
-    /// ファイルパスを更新した新しいインスタンスを返す
-    ///
-    /// エンティティの不変性を保つため、新しいインスタンスを返す
-    ///
-    /// # Arguments
-    /// * `new_path` - 新しいファイルパス
-    ///
-    /// # Returns
-    /// 更新されたAudioFileインスタンス
     #[allow(dead_code)]
     fn with_path(&self, new_path: AudioFilePath) -> Self {
         Self {
@@ -76,42 +65,25 @@ impl AudioFile {
         }
     }
 
-    /// ファイル名（拡張子なし）を取得する
-    ///
-    /// # Returns
-    /// ファイル名のOption
+    /// ファイル名（拡張子なし）
     #[allow(dead_code)]
     pub fn file_stem(&self) -> &str {
         self.path.file_stem()
     }
 
-    /// ファイル名（拡張子あり）を取得する
-    ///
-    /// # Returns
-    /// ファイル名のOption
+    /// ファイル名（拡張子あり）
     #[allow(dead_code)]
     pub fn file_name(&self) -> &str {
         self.path.file_name()
     }
 
     /// ファイルの拡張子を取得する
-    ///
-    /// # Returns
-    /// ファイルの拡張子文字列のOption
     #[allow(dead_code)]
     pub fn extension(&self) -> &str {
         self.path.extension().as_str()
     }
 
-    /// ファイル移動のためのパスを更新
-    ///
-    /// リネームと違い、IDは保持される
-    ///
-    /// # Arguments
-    /// * `new_path` - 移動先のパス
-    ///
-    /// # Returns
-    /// パスが更新されたAudioFileインスタンス
+    /// ファイル移動のためのパスを更新する
     #[allow(dead_code)]
     pub fn move_to(&self, new_path: AudioFilePath) -> Self {
         self.with_path(new_path)
@@ -120,15 +92,10 @@ impl AudioFile {
     /// 新しいファイル名でリネーム
     ///
     /// 同じディレクトリ内でのファイル名変更
-    ///
-    /// # Arguments
-    /// * `new_filename` - 新しいファイル名（拡張子含む）
-    ///
-    /// # Returns
-    /// リネーム後のAudioFileインスタンス、またはエラー
     #[allow(dead_code)]
-    pub fn rename_file(&self, new_filename: &str) -> Result<Self, ValidationError> {
-        let new_path = self.path.with_file_name(new_filename);
+    pub fn rename_file(&self, new_file_stem: &str) -> Result<Self, ValidationError> {
+        let file_name = format!("{}.{}", new_file_stem, self.path.extension().as_str());
+        let new_path = self.path.with_file_name(file_name);
 
         let new_audio_path = AudioFilePath::new(new_path)?;
         Ok(self.with_path(new_audio_path))
@@ -137,12 +104,6 @@ impl AudioFile {
     /// ディレクトリを移動
     ///
     /// ファイル名は保持してディレクトリのみ変更
-    ///
-    /// # Arguments
-    /// * `new_directory` - 新しいディレクトリパス
-    ///
-    /// # Returns
-    /// 移動後のAudioFileインスタンス、またはエラー
     #[allow(dead_code)]
     pub fn move_to_directory(
         &self,
@@ -154,12 +115,6 @@ impl AudioFile {
     }
 
     /// サポートされている音声ファイル形式かどうかを判定する
-    ///
-    /// # Arguments
-    /// * `path` - ファイルパス
-    ///
-    /// # Returns
-    /// サポートされている場合はtrue
     pub fn is_supported_audio_format(path: &std::path::Path) -> bool {
         path.extension()
             .and_then(|ext| ext.to_str())
@@ -168,14 +123,6 @@ impl AudioFile {
     }
 
     /// ID3タグを更新した新しいインスタンスを返す
-    ///
-    /// エンティティの不変性を保つため、新しいインスタンスを返す
-    ///
-    /// # Arguments
-    /// * `new_id3_tag` - 新しいID3タグ
-    ///
-    /// # Returns
-    /// 更新されたAudioFileインスタンス
     fn with_id3_tag(&self, new_id3_tag: Id3Tag) -> Self {
         Self {
             id: self.id,
@@ -184,6 +131,7 @@ impl AudioFile {
         }
     }
 
+    /// ID3タグが変更されたかどうかを判定する
     pub fn has_id3_tag_changed(&self, other: &Self) -> bool {
         self.id3_tag != other.id3_tag
     }
@@ -215,6 +163,7 @@ impl AudioFile {
         self.with_id3_tag(new_id3_tag)
     }
 
+    /// パッチを適用する
     pub fn apply_patch(&self, patch: &AudioFilePatch) -> Self {
         Self {
             id: self.id,
@@ -227,6 +176,10 @@ impl AudioFile {
     }
 }
 
+/// AudioFileの更新用パッチ
+///
+/// * Some(value) - 値を更新
+/// * None - 変更なし
 pub struct AudioFilePatch {
     pub path: Option<AudioFilePath>,
     pub id3_tag: Option<Id3TagPatch>,

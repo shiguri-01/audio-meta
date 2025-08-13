@@ -6,6 +6,7 @@ use std::{
 
 use crate::utils::error::ValidationError;
 
+/// 音声ファイルのパス
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AudioFilePath {
     path: PathBuf,
@@ -15,6 +16,10 @@ pub struct AudioFilePath {
 }
 
 impl AudioFilePath {
+    /// 新しい音声ファイルのパスを作成する
+    ///
+    /// * 空のパスは使用不可
+    /// * 音声ファイルの拡張子のみ使用可能
     pub fn new(path: PathBuf) -> Result<Self, ValidationError> {
         if path.as_os_str().is_empty() {
             return Err(ValidationError::EmptyPath);
@@ -75,6 +80,7 @@ impl AsRef<Path> for AudioFilePath {
     }
 }
 
+/// 音声ファイルの拡張子
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AudioFileExtension {
     Mp3,
@@ -90,6 +96,7 @@ impl AudioFileExtension {
         }
     }
 
+    /// 拡張子が有効かどうかをチェックする
     pub fn is_valid(extension: &str) -> bool {
         Self::new(extension).is_ok()
     }

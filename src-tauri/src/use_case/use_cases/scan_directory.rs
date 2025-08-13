@@ -5,6 +5,7 @@ use crate::{
     use_case::error::ApplicationError,
 };
 
+/// 指定されたディレクトリをスキャンして音声ファイルを取得するユースケース
 pub struct ScanDirectoryUseCase<'a> {
     repository: &'a mut Box<dyn AudioFileRepository>,
 }
@@ -14,6 +15,7 @@ impl<'a> ScanDirectoryUseCase<'a> {
         ScanDirectoryUseCase { repository }
     }
 
+    /// 指定されたディレクトリをスキャンして音声ファイル一覧を返す
     pub async fn execute(&mut self, dir: &Path) -> Result<Vec<AudioFile>, ApplicationError> {
         let files = self.repository.scan_directory(dir).await?;
         Ok(files)

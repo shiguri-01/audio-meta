@@ -14,6 +14,7 @@ impl<'a> UpdateAudioFileUseCase<'a> {
         UpdateAudioFileUseCase { repository }
     }
 
+    /// 音声ファイルの更新を実行し、結果を返す
     pub async fn execute(
         &mut self,
         patch_dto: AudioFilePatchDTO,
