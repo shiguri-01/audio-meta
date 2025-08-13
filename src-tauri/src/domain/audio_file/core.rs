@@ -94,7 +94,14 @@ impl AudioFile {
     /// 同じディレクトリ内でのファイル名変更
     #[allow(dead_code)]
     pub fn rename_file(&self, new_file_stem: &str) -> Result<Self, ValidationError> {
-        let file_name = format!("{}.{}", new_file_stem, self.path.extension().as_str());
+        let trimmed_stem = new_file_stem.trim();
+        if trimmed_stem.is_empty() {
+            return Err(ValidationError::EmptyValue);
+        }
+        if trimmed_stem.contains(['/', '\\', '\0']) {
+            return Err(ValidationError::InvalidFileName);
+        }
+        let file_name = format!("{}.{}", trimmed_stem, self.path.extension().as_str());
         let new_path = self.path.with_file_name(file_name);
 
         let new_audio_path = AudioFilePath::new(new_path)?;
