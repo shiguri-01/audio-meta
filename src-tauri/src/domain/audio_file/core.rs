@@ -68,11 +68,11 @@ impl AudioFile {
     /// # Returns
     /// 更新されたAudioFileインスタンス
     #[allow(dead_code)]
-    pub fn with_path(self, new_path: AudioFilePath) -> Self {
+    fn with_path(&self, new_path: AudioFilePath) -> Self {
         Self {
             id: self.id,
             path: new_path,
-            id3_tag: self.id3_tag,
+            id3_tag: self.id3_tag.clone(),
         }
     }
 
@@ -113,7 +113,7 @@ impl AudioFile {
     /// # Returns
     /// パスが更新されたAudioFileインスタンス
     #[allow(dead_code)]
-    pub fn move_to(self, new_path: AudioFilePath) -> Self {
+    pub fn move_to(&self, new_path: AudioFilePath) -> Self {
         self.with_path(new_path)
     }
 
@@ -127,9 +127,8 @@ impl AudioFile {
     /// # Returns
     /// リネーム後のAudioFileインスタンス、またはエラー
     #[allow(dead_code)]
-    pub fn rename_file(self, new_filename: &str) -> Result<Self, ValidationError> {
-        let mut new_path = (*self.path).clone();
-        new_path.set_file_name(new_filename);
+    pub fn rename_file(&self, new_filename: &str) -> Result<Self, ValidationError> {
+        let new_path = self.path.with_file_name(new_filename);
 
         let new_audio_path = AudioFilePath::new(new_path)?;
         Ok(self.with_path(new_audio_path))
@@ -146,10 +145,10 @@ impl AudioFile {
     /// 移動後のAudioFileインスタンス、またはエラー
     #[allow(dead_code)]
     pub fn move_to_directory(
-        self,
+        &self,
         new_directory: &std::path::Path,
     ) -> Result<Self, AudioFileError> {
-        let new_path = new_directory.join(&self.path);
+        let new_path = new_directory.join(self.path.file_name());
         let new_audio_path = AudioFilePath::new(new_path)?;
         Ok(self.with_path(new_audio_path))
     }
@@ -177,10 +176,10 @@ impl AudioFile {
     ///
     /// # Returns
     /// 更新されたAudioFileインスタンス
-    fn with_id3_tag(self, new_id3_tag: Id3Tag) -> Self {
+    fn with_id3_tag(&self, new_id3_tag: Id3Tag) -> Self {
         Self {
             id: self.id,
-            path: self.path,
+            path: self.path.clone(),
             id3_tag: new_id3_tag,
         }
     }
@@ -193,7 +192,7 @@ impl AudioFile {
         self.id3_tag.title()
     }
     #[allow(dead_code)]
-    pub fn with_title(self, new_title: Option<Title>) -> Self {
+    pub fn with_title(&self, new_title: Option<Title>) -> Self {
         let new_id3_tag = self.id3_tag.with_title(new_title);
         self.with_id3_tag(new_id3_tag)
     }
@@ -202,7 +201,7 @@ impl AudioFile {
         self.id3_tag.artists()
     }
     #[allow(dead_code)]
-    pub fn with_artists(self, new_artists: Option<Artists>) -> Self {
+    pub fn with_artists(&self, new_artists: Option<Artists>) -> Self {
         let new_id3_tag = self.id3_tag.with_artists(new_artists);
         self.with_id3_tag(new_id3_tag)
     }
@@ -211,7 +210,7 @@ impl AudioFile {
         self.id3_tag.album()
     }
     #[allow(dead_code)]
-    pub fn with_album(self, new_album: Option<Album>) -> Self {
+    pub fn with_album(&self, new_album: Option<Album>) -> Self {
         let new_id3_tag = self.id3_tag.with_album(new_album);
         self.with_id3_tag(new_id3_tag)
     }
@@ -231,4 +230,107 @@ impl AudioFile {
 pub struct AudioFilePatch {
     pub path: Option<AudioFilePath>,
     pub id3_tag: Option<Id3TagPatch>,
+}
+
+#[cfg(test)]
+pub fn create_test_audio_file(suffix: &str) -> AudioFile {
+    use std::path::PathBuf;
+
+    use crate::domain::id3::Artist;
+
+    let path = AudioFilePath::new(PathBuf::from(&format!("/test/file{}.mp3", suffix))).unwrap();
+    let tag = Id3Tag::new(
+        Some(Title::new(&format!("Title {}", suffix)).unwrap()),
+        Some(Artists::new(vec![Artist::new(&format!("Artist {}", suffix)).unwrap()]).unwrap()),
+        Some(Album::new(&format!("Album {}", suffix)).unwrap()),
+    );
+
+    AudioFile::new(path, tag)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use super::*;
+
+    #[test]
+    fn test_has_id3_tag_changed() {
+        let path = AudioFilePath::new(PathBuf::from("test.mp3")).unwrap();
+        let id3_tag = Id3Tag::new(None, None, None);
+        let audio_file = AudioFile::new(path, id3_tag.clone());
+        let same_audio_file = AudioFile::new(audio_file.path().clone(), audio_file.id3_tag.clone());
+
+        assert!(!audio_file.has_id3_tag_changed(&same_audio_file));
+
+        // ID3タグのタイトルを変更
+        let new_title = Some(Title::new("New Title").unwrap());
+        let modified_audio_file = audio_file.with_title(new_title);
+
+        assert!(audio_file.has_id3_tag_changed(&modified_audio_file));
+    }
+
+    #[test]
+    fn test_with_path() {
+        let path = AudioFilePath::new(PathBuf::from("test.mp3")).unwrap();
+        let id3_tag = Id3Tag::new(None, None, None);
+        let audio_file = AudioFile::new(path.clone(), id3_tag);
+
+        let new_path = AudioFilePath::new(PathBuf::from("new_test.mp3")).unwrap();
+        let modified_audio_file = audio_file.with_path(new_path.clone());
+
+        assert_eq!(audio_file.path(), &path);
+        assert_eq!(modified_audio_file.path(), &new_path);
+    }
+
+    #[test]
+    fn test_with_id3_tag() {
+        let path = AudioFilePath::new(PathBuf::from("test.mp3")).unwrap();
+        let id3_tag = Id3Tag::new(None, None, None);
+        let audio_file = AudioFile::new(path, id3_tag.clone());
+
+        let new_id3_tag = Id3Tag::new(Some(Title::new("New Title").unwrap()), None, None);
+        let modified_audio_file = audio_file.with_id3_tag(new_id3_tag.clone());
+
+        assert_eq!(audio_file.id3_tag, id3_tag);
+        assert_eq!(modified_audio_file.id3_tag, new_id3_tag);
+    }
+
+    #[test]
+    fn test_apply_patch() {
+        let path = AudioFilePath::new(PathBuf::from("test.mp3")).unwrap();
+        let id3_tag = Id3Tag::new(None, None, None);
+        let audio_file = AudioFile::new(path, id3_tag);
+
+        let new_path = AudioFilePath::new(PathBuf::from("new_test.mp3")).unwrap();
+        let new_title = Some(Title::new("New Title").unwrap());
+        let patch = AudioFilePatch {
+            path: Some(new_path.clone()),
+            id3_tag: Some(Id3TagPatch {
+                title: Some(new_title.clone()),
+                artists: None,
+                album: None,
+            }),
+        };
+        let modified_audio_file = audio_file.apply_patch(&patch);
+
+        assert_eq!(modified_audio_file.path(), &new_path);
+        assert_eq!(modified_audio_file.title(), new_title.as_ref());
+    }
+
+    #[test]
+    fn test_apply_patch_no_changes() {
+        let path = AudioFilePath::new(PathBuf::from("test.mp3")).unwrap();
+        let id3_tag = Id3Tag::new(None, None, None);
+        let audio_file = AudioFile::new(path, id3_tag);
+
+        let patch = AudioFilePatch {
+            path: None,
+            id3_tag: None,
+        };
+        let modified_audio_file = audio_file.apply_patch(&patch);
+
+        assert_eq!(modified_audio_file.path(), audio_file.path());
+        assert_eq!(modified_audio_file.id3_tag, audio_file.id3_tag);
+    }
 }

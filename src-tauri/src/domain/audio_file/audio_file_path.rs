@@ -101,3 +101,20 @@ impl AudioFileExtension {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_audio_file_path_new() {
+        let path = AudioFilePath::new(PathBuf::from("test.mp3"));
+        assert!(path.is_ok());
+    }
+
+    #[test]
+    fn test_audio_file_path_invalid_extension() {
+        let path = AudioFilePath::new(PathBuf::from("test.txt"));
+        assert!(path.is_err());
+    }
+}

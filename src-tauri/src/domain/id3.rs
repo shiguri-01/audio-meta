@@ -160,3 +160,85 @@ impl Deref for Album {
         &self.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_apply_patch() {
+        let original = Id3Tag {
+            title: Some(Title::new("Original Title").unwrap()),
+            artists: Some(Artists::new(vec![Artist::new("Original Artist").unwrap()]).unwrap()),
+            album: Some(Album::new("Original Album").unwrap()),
+        };
+
+        let patch = Id3TagPatch {
+            title: Some(Some(Title::new("Updated Title").unwrap())),
+            artists: Some(Some(
+                Artists::new(vec![Artist::new("Updated Artist").unwrap()]).unwrap(),
+            )),
+            album: Some(Some(Album::new("Updated Album").unwrap())),
+        };
+
+        let updated = original.apply_patch(&patch);
+
+        assert_eq!(updated.title(), Some(&Title::new("Updated Title").unwrap()));
+        assert_eq!(
+            updated.artists(),
+            Some(&Artists::new(vec![Artist::new("Updated Artist").unwrap()]).unwrap())
+        );
+        assert_eq!(updated.album(), Some(&Album::new("Updated Album").unwrap()));
+    }
+
+    #[test]
+    fn test_apply_patch_deletion() {
+        let original = Id3Tag {
+            title: Some(Title::new("Original Title").unwrap()),
+            artists: Some(Artists::new(vec![Artist::new("Original Artist").unwrap()]).unwrap()),
+            album: Some(Album::new("Original Album").unwrap()),
+        };
+
+        let patch = Id3TagPatch {
+            title: Some(None),
+            artists: Some(None),
+            album: Some(None),
+        };
+
+        let updated = original.apply_patch(&patch);
+
+        assert_eq!(updated.title(), None);
+        assert_eq!(updated.artists(), None);
+        assert_eq!(updated.album(), None);
+    }
+
+    #[test]
+    fn test_apply_patch_no_changes() {
+        let original = Id3Tag {
+            title: Some(Title::new("Original Title").unwrap()),
+            artists: Some(Artists::new(vec![Artist::new("Original Artist").unwrap()]).unwrap()),
+            album: Some(Album::new("Original Album").unwrap()),
+        };
+
+        let patch = Id3TagPatch {
+            title: None,
+            artists: None,
+            album: None,
+        };
+
+        let updated = original.apply_patch(&patch);
+
+        assert_eq!(
+            updated.title(),
+            Some(&Title::new("Original Title").unwrap())
+        );
+        assert_eq!(
+            updated.artists(),
+            Some(&Artists::new(vec![Artist::new("Original Artist").unwrap()]).unwrap())
+        );
+        assert_eq!(
+            updated.album(),
+            Some(&Album::new("Original Album").unwrap())
+        );
+    }
+}
