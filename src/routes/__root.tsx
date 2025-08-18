@@ -1,6 +1,6 @@
 import { createRootRouteWithContext, Outlet } from "@tanstack/solid-router";
 import { TanStackRouterDevtools } from "@tanstack/solid-router-devtools";
-import { CommandsProvider } from "../tauri/commands-provider";
+import { CommandsProvider } from "../tauri/commands";
 
 export const Route = createRootRouteWithContext()({
   component: RootComponent,

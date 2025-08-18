@@ -1,5 +1,6 @@
 import { okAsync } from "neverthrow";
-import type { AudioFileDTO, Commands } from "./types";
+import type { AudioFileDTO } from "../dto";
+import type { Commands } from "./types";
 
 const mockAudioFiles: AudioFileDTO[] = [
   {
