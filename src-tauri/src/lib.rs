@@ -5,8 +5,8 @@ mod utils;
 
 use std::path::Path;
 
+use tauri::async_runtime::Mutex;
 use tauri::Manager;
-use tokio::sync::Mutex;
 
 use crate::{
     domain::audio_file::AudioFileRepository,
