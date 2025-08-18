@@ -65,10 +65,11 @@ mod tests {
 
         assert!(result.is_err());
         match result {
-            Err(ApplicationError::Unexpected) => {
-                // 期待されるエラー
+            Err(ApplicationError::AudioFileError(AudioFileError::FileNotFound { id, path })) => {
+                assert_eq!(id, Some(non_existent_id.to_string()));
+                assert_eq!(path, None);
             }
-            _ => panic!("Expected ApplicationError::Unexpected"),
+            _ => panic!("Expected ApplicationError::AudioFileError(AudioFileError::FileNotFound)"),
         }
     }
 
