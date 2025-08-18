@@ -2,6 +2,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ApplicationError {
+    #[allow(dead_code)]
     #[error("Unexpected error")]
     Unexpected,
 

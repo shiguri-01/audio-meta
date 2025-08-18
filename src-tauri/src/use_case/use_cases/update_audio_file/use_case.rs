@@ -1,6 +1,7 @@
 use crate::{
     domain::audio_file::{AudioFile, AudioFilePatch, AudioFileRepository},
     use_case::error::ApplicationError,
+    utils::error::AudioFileError,
 };
 
 use super::dto::AudioFilePatchDTO;
@@ -19,11 +20,12 @@ impl<'a> UpdateAudioFileUseCase<'a> {
         &mut self,
         patch_dto: AudioFilePatchDTO,
     ) -> Result<AudioFile, ApplicationError> {
-        let audio_file = self
-            .repository
-            .find_by_id(&patch_dto.id)
-            .await?
-            .ok_or(ApplicationError::Unexpected)?;
+        let audio_file = self.repository.find_by_id(&patch_dto.id).await?.ok_or(
+            AudioFileError::FileNotFound {
+                id: Some(patch_dto.id.to_string()),
+                path: None,
+            },
+        )?;
 
         let patch = AudioFilePatch::from(patch_dto)?;
         let updated_audio_file = audio_file.apply_patch(&patch);
