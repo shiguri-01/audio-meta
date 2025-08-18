@@ -49,7 +49,8 @@ impl AudioFileFileSystemRepository {
             // 移動前のパスが存在するか確認
             if !existing_file.path().exists() {
                 return Err(AudioFileError::FileNotFound {
-                    path: existing_file.path().to_string_lossy().to_string(),
+                    id: None,
+                    path: Some(existing_file.path().to_path_buf()),
                 });
             }
 
@@ -83,7 +84,8 @@ impl AudioFileRepository for AudioFileFileSystemRepository {
             // TODO: 新規ファイルの作成
             // とりあえずエラー
             return Err(AudioFileError::FileNotFound {
-                path: audio_file.path().to_string_lossy().to_string(),
+                id: Some(audio_file.id().to_string()),
+                path: None, // 移動後のパスにファイルが存在しないことは想定内
             });
         };
 
@@ -160,7 +162,8 @@ async fn load_audio_file_from_fs(path: &AudioFilePath) -> Result<AudioFile, Audi
     // ローカルストレージからファイルを読み込む
     if !path.exists() {
         return Err(AudioFileError::FileNotFound {
-            path: path.to_string_lossy().to_string(),
+            id: None,
+            path: Some(path.to_path_buf()),
         });
     }
 

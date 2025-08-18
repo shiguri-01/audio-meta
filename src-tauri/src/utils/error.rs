@@ -5,8 +5,11 @@ pub enum AudioFileError {
     #[error("Validation error: {0}")]
     Validation(#[from] ValidationError),
 
-    #[error("File not found: {path}")]
-    FileNotFound { path: String },
+    #[error("File not found: path={path:?}, id={id:?}")]
+    FileNotFound {
+        id: Option<String>,
+        path: Option<std::path::PathBuf>,
+    },
 
     #[error("ID3 tag error: {0}")]
     Id3Error(#[from] id3::Error),
