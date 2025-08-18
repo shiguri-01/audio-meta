@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/solid-router";
-import * as Solid from "solid-js";
 
 import logo from "../logo.svg";
 

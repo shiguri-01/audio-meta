@@ -10,7 +10,7 @@
     "includes": [
       "**",
       "!src/routeTree.gen.ts",
-      "!src-tauri/**",
+      "!src-tauri",
       "src-tauri/tauri.conf.json"
     ]
   },

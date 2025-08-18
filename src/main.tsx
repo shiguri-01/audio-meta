@@ -18,11 +18,7 @@ declare module "@tanstack/solid-router" {
 }
 
 function App() {
-  return (
-    <>
-      <RouterProvider router={router} />
-    </>
-  );
+  return <RouterProvider router={router} />;
 }
 
 const rootElement = document.getElementById("app");
