@@ -22,9 +22,9 @@ export interface AudioFilePatchDTO {
 
 type CommandArgs = Record<string, unknown> | undefined;
 type CommandResult<T> = ResultAsync<T, string>;
-type Command<Args extends CommandArgs, Result> = (
-  args: Args,
-) => CommandResult<Result>;
+type Command<Args extends CommandArgs, Result> = Args extends undefined
+  ? () => CommandResult<Result>
+  : (args: Args) => CommandResult<Result>;
 
 export type SelectDirectory = Command<undefined, string | null>;
 
