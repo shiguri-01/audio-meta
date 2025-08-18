@@ -28,27 +28,6 @@ impl AudioFileMockRepository {
     pub fn set_scan_result(&mut self, files: Vec<AudioFile>) {
         self.scan_result = files;
     }
-
-    /// テスト用：保存されているファイル数を取得
-    pub fn count(&self) -> usize {
-        self.files.len()
-    }
-
-    /// テスト用：特定のIDのファイルが保存されているかチェック
-    pub fn contains_id(&self, id: &Uuid) -> bool {
-        self.files.contains_key(id)
-    }
-
-    /// テスト用：保存されているファイルを取得
-    pub fn get_file(&self, id: &Uuid) -> Option<&AudioFile> {
-        self.files.get(id)
-    }
-
-    /// テスト用：すべてのファイルをクリア
-    pub fn clear(&mut self) {
-        self.files.clear();
-        self.scan_result.clear();
-    }
 }
 
 #[async_trait::async_trait]
