@@ -29,8 +29,14 @@ pub enum ValidationError {
     #[error("file extension is invalid")]
     InvalidExtension,
 
+    #[error("path is invalid")]
+    InvalidPath,
+
     #[error("file path is not valid UTF-8")]
     InvalidUtf8Path,
+
+    #[error("file name contains invalid characters")]
+    InvalidFileName,
 
     #[error("file name is missing")]
     MissingFileName,

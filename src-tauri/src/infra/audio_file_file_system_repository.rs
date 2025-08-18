@@ -5,7 +5,7 @@ use crate::{
         audio_file::{AudioFile, AudioFilePath, AudioFileRepository},
         id3::{Album, Artist, Artists, Id3Tag, Title},
     },
-    utils::error::AudioFileError,
+    utils::error::{AudioFileError, ValidationError},
 };
 use id3::{Tag, TagLike};
 use uuid::Uuid;
@@ -97,6 +97,10 @@ impl AudioFileRepository for AudioFileFileSystemRepository {
         dir: &std::path::Path,
     ) -> Result<Vec<AudioFile>, AudioFileError> {
         // TODO: cacheをfsと同期させる
+
+        if !(dir.is_absolute() && dir.exists() && dir.is_dir()) {
+            Err(ValidationError::InvalidPath)?;
+        }
 
         let audio_paths: Vec<AudioFilePath> = fs::read_dir(dir)?
             .filter_map(Result::ok)
