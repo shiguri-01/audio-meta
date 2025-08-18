@@ -187,6 +187,7 @@ impl AudioFile {
 ///
 /// * Some(value) - 値を更新
 /// * None - 変更なし
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AudioFilePatch {
     pub path: Option<AudioFilePath>,
     pub id3_tag: Option<Id3TagPatch>,
