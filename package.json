@@ -22,6 +22,7 @@
     "@tanstack/solid-router-devtools": "^1.121.3",
     "@tauri-apps/api": "^2.7.0",
     "@tauri-apps/plugin-dialog": "~2",
+    "lodash": "^4.17.21",
     "neverthrow": "^8.2.0",
     "solid-js": "^1.9.4",
     "tailwindcss": "^4.0.6"
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.1.4",
     "@tauri-apps/cli": "^2.7.1",
+    "@types/lodash": "^4.17.20",
     "@types/node": "^24.2.1",
     "cross-env": "^10.0.0",
     "lefthook": "^1.12.2",
