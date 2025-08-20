@@ -1,4 +1,5 @@
 import { isEqual } from "lodash";
+import { err, ok, type ResultAsync } from "neverthrow";
 import { type Accessor, createMemo, createSignal, type Setter } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import type {
@@ -10,14 +11,12 @@ import type { AudioFileDTO, AudioFilePatchDTO } from "@/tauri/dto";
 
 export interface DirectoryScanner {
   selectedDirectory: Accessor<string | null>;
-  audioFiles: Accessor<AudioFileDTO[]>;
   isLoading: Accessor<boolean>;
-  error: Accessor<string | null>;
 
   /**
    * ディレクトリ選択ダイアログを開き、選択されたディレクトリの音声ファイルを走査する
    */
-  selectAndScanDirectory: () => Promise<void>;
+  selectAndScanDirectory: () => ResultAsync<AudioFileDTO[], string>;
 }
 
 export const createDirectoryScanner = ({
@@ -27,50 +26,33 @@ export const createDirectoryScanner = ({
   selectDirectoryCommand: SelectDirectory;
   scanDirectoryCommand: ScanDirectory;
 }): DirectoryScanner => {
-  const [audioFiles, setAudioFiles] = createSignal<AudioFileDTO[]>([]);
   const [selectedDirectory, setSelectedDirectory] = createSignal<string | null>(
     null,
   );
   const [isLoading, setIsLoading] = createSignal<boolean>(false);
-  const [error, setError] = createSignal<string | null>(null);
 
-  const selectAndScanDirectory = async () => {
+  const selectAndScanDirectory = (): ResultAsync<AudioFileDTO[], string> => {
     setIsLoading(true);
-    setError(null);
 
-    try {
-      const newDir = await selectDirectoryCommand();
-
-      if (newDir.isErr()) {
-        setError(newDir.error);
-        return;
-      }
-      if (newDir.value === null) {
-        // ディレクトリ選択がキャンセルされた場合
-        // 状態は変更しない
-        return;
-      }
-
-      const scannedFiles = await scanDirectoryCommand({ dir: newDir.value });
-
-      if (scannedFiles.isErr()) {
-        setError(scannedFiles.error);
-        return;
-      }
-
-      // 選択とスキャンが成功した場合、状態を更新
-      setSelectedDirectory(newDir.value);
-      setAudioFiles(scannedFiles.value);
-    } finally {
-      setIsLoading(false);
-    }
+    return selectDirectoryCommand()
+      .andThen((dir) => (dir ? ok(dir) : err("No directory selected")))
+      .andThen((dir) =>
+        scanDirectoryCommand({ dir }).andThen((files) => ok({ dir, files })),
+      )
+      .andThen(({ dir, files }) => {
+        setSelectedDirectory(dir);
+        setIsLoading(false);
+        return ok(files);
+      })
+      .orElse((e) => {
+        setIsLoading(false);
+        return err(e);
+      });
   };
 
   return {
-    audioFiles,
     selectedDirectory,
     isLoading,
-    error,
     selectAndScanDirectory,
   };
 };
@@ -78,13 +60,14 @@ export const createDirectoryScanner = ({
 export interface AudioFilesManager {
   audioFiles: AudioFileDTO[];
   isUpdating: Accessor<boolean>;
-  error: Accessor<string | null>;
 
   /** 音声ファイルを更新する
    *
    * 更新を永続化する
    */
-  updateAudioFile: (patch: AudioFilePatchDTO) => Promise<boolean>;
+  updateAudioFile: (
+    patch: AudioFilePatchDTO,
+  ) => ResultAsync<AudioFileDTO, string>;
   /**
    * オーディオファイルリストを新しいリストに置き換える
    *
@@ -98,36 +81,30 @@ export const createAudioFilesManager = (
   { updateAudioFileCommand }: { updateAudioFileCommand: UpdateAudioFile },
 ): AudioFilesManager => {
   const [audioFiles, setAudioFiles] = createStore(initialAudioFiles);
-  const [error, setError] = createSignal<string | null>(null);
   const [isUpdating, setIsUpdating] = createSignal<boolean>(false);
 
-  const updateAudioFile = async (patch: AudioFilePatchDTO) => {
+  const updateAudioFile = (
+    patch: AudioFilePatchDTO,
+  ): ResultAsync<AudioFileDTO, string> => {
     setIsUpdating(true);
-    setError(null);
 
-    try {
-      return await updateAudioFileCommand({ patch }).match(
-        (newFile) => {
-          const fileIndex = audioFiles.findIndex(
-            (file) => file.id === newFile.id,
-          );
-          if (fileIndex === -1) {
-            setError("File not found");
-            return false;
-          }
+    return updateAudioFileCommand({ patch })
+      .andThen((newFile) => {
+        const fileIndex = audioFiles.findIndex(
+          (file) => file.id === newFile.id,
+        );
+        if (fileIndex === -1) {
+          return err("File not found");
+        }
 
-          setAudioFiles(fileIndex, reconcile(newFile));
-
-          return true;
-        },
-        (error) => {
-          setError(error);
-          return false;
-        },
-      );
-    } finally {
-      setIsUpdating(false);
-    }
+        setAudioFiles(fileIndex, reconcile(newFile));
+        setIsUpdating(false);
+        return ok(newFile);
+      })
+      .orElse((e) => {
+        setIsUpdating(false);
+        return err(e);
+      });
   };
 
   const replaceAllAudioFiles = (audioFiles: AudioFileDTO[]) => {
@@ -137,7 +114,6 @@ export const createAudioFilesManager = (
   return {
     audioFiles,
     isUpdating,
-    error,
     updateAudioFile,
     replaceAllAudioFiles,
   };
