@@ -9,12 +9,14 @@ export const Route = createRootRouteWithContext()({
 
 function RootComponent() {
   return (
-    // TODO: fallbackをいい感じにする
-    <Suspense fallback={null}>
-      <CommandsProvider>
-        <Outlet />
-        {import.meta.env.DEV && <TanStackRouterDevtools />}
-      </CommandsProvider>
-    </Suspense>
+    <>
+      {/* TODO: fallbackをいい感じにする */}
+      <Suspense fallback={null}>
+        <CommandsProvider>
+          <Outlet />
+        </CommandsProvider>
+      </Suspense>
+      {import.meta.env.DEV && <TanStackRouterDevtools />}
+    </>
   );
 }
