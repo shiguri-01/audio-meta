@@ -1,5 +1,11 @@
 import { TextField } from "@kobalte/core/text-field";
-import { type Accessor, createSignal, Show } from "solid-js";
+import {
+  type Accessor,
+  createEffect,
+  createMemo,
+  createSignal,
+  Show,
+} from "solid-js";
 import { Table } from "@/components/table";
 import { cn } from "@/utils/style";
 import { useAudioFileEditor } from "../providers/audio-file-editor";
@@ -26,6 +32,15 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
     formatValue(props.value()),
   );
   const [isEditing, setIsEditing] = createSignal(false);
+
+  // TODO: バリデーションを組み込むタイミングで、inputValueそのままと（必要に応じて）エラーメッセージを表示する
+  const displayValue = createMemo(() => formatValue(props.value()));
+
+  createEffect(() => {
+    if (!isEditing()) {
+      setInputValue(formatValue(props.value()));
+    }
+  });
 
   let cellRef: HTMLTableCellElement | undefined;
   let inputRef: HTMLInputElement | undefined;
@@ -68,7 +83,9 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
       <Show
         when={isEditing()}
         fallback={
-          <span class={cn("size-stretch overflow-hidden")}>{inputValue()}</span>
+          <span class={cn("size-stretch overflow-hidden")}>
+            {displayValue()}
+          </span>
         }
       >
         <TextField value={inputValue()} onChange={setInputValue}>
