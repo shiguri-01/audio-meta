@@ -2,6 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -11,6 +12,7 @@ export default defineConfig({
     TanStackRouterVite({ target: "solid", autoCodeSplitting: true }),
     solidPlugin(),
     tailwindcss(),
+    tsconfigPaths(),
   ],
 
   // ViteがRustのエラーを不明瞭にしないようにする
