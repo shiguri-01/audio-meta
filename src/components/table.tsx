@@ -159,7 +159,7 @@ const TableCell: Component<ComponentProps<"td">> = (props) => {
     <td
       class={cn(
         "align-middle whitespace-nowrap h-8 px-4 py-1",
-        "focus:bg-red-200 focus:outline-none",
+        "focus:outline-2 outline-blue-500",
         local.class,
       )}
       // biome-ignore lint/a11y/noNoninteractiveTabindex: table cell needs to be focusable for keyboard navigation

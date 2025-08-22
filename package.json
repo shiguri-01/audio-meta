@@ -16,6 +16,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@kobalte/core": "^0.13.11",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/router-plugin": "^1.121.3",
     "@tanstack/solid-router": "^1.121.3",
