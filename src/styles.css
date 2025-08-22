@@ -4,8 +4,8 @@
   --spacing-stretch: stretch;
 
   --font-sans:
-    "Segoe UI Variable", "Segoe UI", "Helvetica Neue", "Noto Sans JP", "Hiragino Sans",
-    "Hiragino Kaku Gothic ProN", sans-serif;
+    "Segoe UI Variable", "Segoe UI", "Helvetica Neue", "Noto Sans JP",
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
 
   --color-bg: var(--color-white);
   --color-bg-surface: var(--color-neutral-100);
