@@ -45,6 +45,8 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
   let cellRef: HTMLTableCellElement | undefined;
   let inputRef: HTMLInputElement | undefined;
 
+  const [suppressBlurCommit, setSuppressBlurCommit] = createSignal(false);
+
   const beginEditing = () => {
     if (isEditing()) return;
 
@@ -92,7 +94,14 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
           <TextField.Input
             ref={inputRef}
             class="focus:outline-none size-stretch"
-            onBlur={commitEdit}
+            onBlur={() => {
+              if (suppressBlurCommit()) {
+                setSuppressBlurCommit(false);
+                return;
+              }
+
+              commitEdit();
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 // 変更を確定し、セルにフォーカスを戻す
@@ -101,13 +110,19 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
 
                 commitEdit();
 
+                setSuppressBlurCommit(true);
                 requestAnimationFrame(() => {
                   cellRef?.focus();
                 });
               }
               if (e.key === "Escape") {
                 // 変更をキャンセルし、セルにフォーカスを戻す
+                e.preventDefault();
+                e.stopPropagation();
+
                 resetEditing();
+
+                setSuppressBlurCommit(true);
                 requestAnimationFrame(() => {
                   cellRef?.focus();
                 });
