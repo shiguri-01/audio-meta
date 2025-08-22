@@ -11,7 +11,7 @@
   --color-bg-surface: var(--color-neutral-100);
   --color-fg: var(--color-neutral-950);
   --color-fg-muted: var(--color-neutral-400);
-  
+
   --color-border: var(--color-neutral-300);
   --color-destructive: var(--color-red-600);
 }
