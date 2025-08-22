@@ -17,10 +17,12 @@
     /* Linting */
     "skipLibCheck": true,
     "strict": true,
+    "strictNullChecks": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "exactOptionalPropertyTypes": true,
 
     "baseUrl": "./",
     "paths": {
