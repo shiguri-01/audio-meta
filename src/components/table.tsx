@@ -44,9 +44,19 @@ const tableKeyboardNav = (el: HTMLTableElement) => {
     switch (key) {
       case "ArrowUp":
         nextRowIndex = Math.max(currentRowIndex - 1, 0);
+        // 列が結合されている場合、次の行の列数を超えないようにする
+        nextColIndex = Math.min(
+          nextColIndex,
+          rows[nextRowIndex].cells.length - 1,
+        );
         break;
       case "ArrowDown":
         nextRowIndex = Math.min(currentRowIndex + 1, rows.length - 1);
+        // 列が結合されている場合、次の行の列数を超えないようにする
+        nextColIndex = Math.min(
+          nextColIndex,
+          rows[nextRowIndex].cells.length - 1,
+        );
         break;
       case "ArrowLeft":
         nextColIndex = Math.max(currentColIndex - 1, 0);
