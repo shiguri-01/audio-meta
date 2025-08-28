@@ -1,4 +1,6 @@
 import { TextField } from "@kobalte/core/text-field";
+import { type } from "arktype";
+import { err, ok, type Result } from "neverthrow";
 import {
   type Accessor,
   createEffect,
@@ -9,29 +11,32 @@ import {
 import { Table } from "@/components/table";
 import { cn } from "@/utils/style";
 import { useAudioFileEditor } from "../providers/audio-file-editor";
+import { Album, Artists, Title } from "../schemas";
 
 export type EditableCellProps<TValue> = {
   value: Accessor<TValue>;
   onCommit: (value: TValue) => void;
   /**
-   * valueを表示用の文字列に変換する
+   * 実際の値(TValue)を表示用の文字列に変換する
    */
   formatValue?: (value: TValue) => string;
   /**
-   * 入力された文字列をvalueに変換する
+   * 入力値を実際の値(TValue)に変換する
    */
-  parseValue?: (value: string) => TValue;
+  transformValue?: (input: string) => Result<TValue, string[]>;
 };
 
 function EditableCell<TValue>(props: EditableCellProps<TValue>) {
   const formatValue = props.formatValue || ((value: TValue) => String(value));
-  const parseValue =
-    props.parseValue || ((value: string) => value as unknown as TValue);
+
+  const transformValue =
+    props.transformValue || ((input: string) => ok(input as unknown as TValue));
 
   const [inputValue, setInputValue] = createSignal<string>(
     formatValue(props.value()),
   );
   const [isEditing, setIsEditing] = createSignal(false);
+  const [_errorMessages, setErrorMessages] = createSignal<string[]>([]);
 
   // TODO: バリデーションを組み込むタイミングで、inputValueそのままと（必要に応じて）エラーメッセージを表示する
   const displayValue = createMemo(() => formatValue(props.value()));
@@ -57,9 +62,15 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
   };
 
   const commitEdit = () => {
-    const newValue = parseValue(inputValue());
     setIsEditing(false);
-    props.onCommit(newValue);
+    const newValue = transformValue(inputValue());
+
+    if (newValue.isOk()) {
+      props.onCommit(newValue.value);
+      setErrorMessages([]);
+    } else {
+      setErrorMessages(newValue.error);
+    }
   };
 
   const resetEditing = () => {
@@ -149,7 +160,14 @@ export const TitleCell = () => {
       value={title}
       onCommit={setTitle}
       formatValue={(value) => value ?? ""}
-      parseValue={(value) => value.trim() || null}
+      transformValue={(input) => {
+        const schema = Title.or(type("null"));
+        const result = schema(input.trim().length > 0 ? input.trim() : null);
+        if (result instanceof type.errors) {
+          return err(result.issues.map((e) => e.message));
+        }
+        return ok(result);
+      }}
     />
   );
 };
@@ -162,13 +180,18 @@ export const ArtistsCell = () => {
       value={artists}
       onCommit={setArtists}
       formatValue={(value) => (value ? value.join(", ") : "")}
-      parseValue={(value) => {
-        const artists = value
+      transformValue={(input) => {
+        const raw = input
           .trim()
           .split(",")
           .map((artist) => artist.trim())
           .filter((artist) => artist !== "");
-        return artists.length > 0 ? artists : null;
+        const schema = Artists.or(type("null"));
+        const result = schema(raw.length > 0 ? raw : null);
+        if (result instanceof type.errors) {
+          return err(result.issues.map((e) => e.message));
+        }
+        return ok(result);
       }}
     />
   );
@@ -182,7 +205,14 @@ export const AlbumCell = () => {
       value={album}
       onCommit={setAlbum}
       formatValue={(value) => value ?? ""}
-      parseValue={(value) => value.trim() || null}
+      transformValue={(input) => {
+        const schema = Album.or(type("null"));
+        const result = schema(input.trim().length > 0 ? input.trim() : null);
+        if (result instanceof type.errors) {
+          return err(result.issues.map((e) => e.message));
+        }
+        return ok(result);
+      }}
     />
   );
 };

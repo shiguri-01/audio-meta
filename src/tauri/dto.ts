@@ -26,9 +26,8 @@ export interface AudioFilePatchDTO {
 export const audioFileToDTO: toDTO<AudioFile, AudioFileDTO> = (audioFile) => {
   return {
     id: audioFile.id,
-    // 型のブランドを外すためにas unknown asを使用
-    path: audioFile.path as unknown as string,
-    id3_tag: audioFile.id3Tag as unknown as Id3TagDTO,
+    path: audioFile.path,
+    id3_tag: audioFile.id3Tag,
   };
 };
 
@@ -40,7 +39,7 @@ export const audioFileFromDTO: fromDTO<AudioFile, AudioFileDTO> = (dto) => {
   });
 
   if (out instanceof type.errors) {
-    return err(out);
+    return err(out.map((e) => e.message));
   } else {
     return ok(out);
   }
