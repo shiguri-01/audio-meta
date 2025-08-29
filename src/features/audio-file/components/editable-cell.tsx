@@ -3,16 +3,16 @@ import { type } from "arktype";
 import { err, ok, type Result } from "neverthrow";
 import {
   type Accessor,
+  batch,
   createEffect,
-  createMemo,
   createSignal,
+  For,
   Show,
 } from "solid-js";
 import { Table } from "@/components/table";
 import { cn } from "@/utils/style";
 import { useAudioFileEditor } from "../providers/audio-file-editor";
-import { Album, Artists, Title } from "../schemas";
-
+import { Album, Artists, Path, Title } from "../schemas";
 export type EditableCellProps<TValue> = {
   value: Accessor<TValue>;
   onCommit: (value: TValue) => void;
@@ -27,6 +27,8 @@ export type EditableCellProps<TValue> = {
 };
 
 function EditableCell<TValue>(props: EditableCellProps<TValue>) {
+  // TODO: Tooltipを汎用的に使えるように切り出す
+
   const formatValue = props.formatValue || ((value: TValue) => String(value));
 
   const transformValue =
@@ -36,19 +38,11 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
     formatValue(props.value()),
   );
   const [isEditing, setIsEditing] = createSignal(false);
-  const [_errorMessages, setErrorMessages] = createSignal<string[]>([]);
-
-  // TODO: バリデーションを組み込むタイミングで、inputValueそのままと（必要に応じて）エラーメッセージを表示する
-  const displayValue = createMemo(() => formatValue(props.value()));
-
-  createEffect(() => {
-    if (!isEditing()) {
-      setInputValue(formatValue(props.value()));
-    }
-  });
+  const [errorMessages, setErrorMessages] = createSignal<string[]>([]);
 
   let cellRef: HTMLTableCellElement | undefined;
   let inputRef: HTMLInputElement | undefined;
+  let tooltipRef: HTMLDivElement | undefined;
 
   const [suppressBlurCommit, setSuppressBlurCommit] = createSignal(false);
 
@@ -56,93 +50,144 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
     if (isEditing()) return;
 
     setIsEditing(true);
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       inputRef?.focus();
-    }, 0);
+    });
   };
 
   const commitEdit = () => {
-    setIsEditing(false);
-    const newValue = transformValue(inputValue());
+    batch(() => {
+      setIsEditing(false);
+      const newValue = transformValue(inputValue());
 
+      if (newValue.isOk()) {
+        props.onCommit(newValue.value);
+        setErrorMessages([]);
+      } else {
+        setErrorMessages(newValue.error);
+      }
+    });
+  };
+
+  const resetEditing = () => {
+    batch(() => {
+      setInputValue(formatValue(props.value()));
+      setIsEditing(false);
+    });
+  };
+
+  createEffect(() => {
+    if (!isEditing()) {
+      setInputValue(formatValue(props.value()));
+    }
+  });
+
+  // 入力値が変わるたびにバリデーションを実行する
+  createEffect(() => {
+    const newValue = transformValue(inputValue());
     if (newValue.isOk()) {
-      props.onCommit(newValue.value);
       setErrorMessages([]);
     } else {
       setErrorMessages(newValue.error);
     }
-  };
+  });
 
-  const resetEditing = () => {
-    setInputValue(formatValue(props.value()));
-    setIsEditing(false);
-  };
+  // ランダムなアンカー名を生成する（セルごとに固有のアンカー名が必要となるため）
+  const anchorName = `--anchor-${Math.random().toString().slice(2)}`;
 
   return (
-    <Table.Cell
-      ref={cellRef}
-      tabIndex={0}
-      onClick={beginEditing}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" && !isEditing()) {
-          beginEditing();
-        }
-      }}
-      class={cn(
-        "cursor-pointer",
-        isEditing() && "outline-2 outline-blue-500 ring-4 ring-blue-200",
-      )}
-    >
-      <Show
-        when={isEditing()}
-        fallback={
-          <span class={cn("size-stretch overflow-hidden")}>
-            {displayValue()}
-          </span>
-        }
+    <>
+      <Table.Cell
+        ref={cellRef}
+        tabIndex={0}
+        onClick={beginEditing}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !isEditing()) {
+            beginEditing();
+          }
+        }}
+        class={cn(
+          "cursor-pointer",
+          isEditing() && "outline-2 outline-blue-500 ring-4 ring-blue-200",
+          errorMessages().length > 0 && "bg-red-100",
+        )}
+        onMouseEnter={() => {
+          tooltipRef?.showPopover();
+        }}
+        onMouseLeave={() => {
+          tooltipRef?.hidePopover();
+        }}
+        style={`anchor-name: ${anchorName};`}
       >
-        <TextField value={inputValue()} onChange={setInputValue}>
-          <TextField.Input
-            ref={inputRef}
-            class="focus:outline-none size-stretch"
-            onBlur={() => {
-              if (suppressBlurCommit()) {
-                setSuppressBlurCommit(false);
-                return;
-              }
-
-              commitEdit();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                // 変更を確定し、セルにフォーカスを戻す
-                e.preventDefault();
-                e.stopPropagation();
+        <Show
+          when={isEditing()}
+          fallback={
+            <span class={cn("size-stretch overflow-hidden")}>
+              {inputValue()}
+            </span>
+          }
+        >
+          <TextField value={inputValue()} onChange={setInputValue}>
+            <TextField.Input
+              ref={inputRef}
+              class="focus:outline-none size-stretch"
+              onBlur={() => {
+                console.log("blur");
+                console.log({ suppressBlurCommit: suppressBlurCommit() });
+                if (suppressBlurCommit()) {
+                  setSuppressBlurCommit(false);
+                  return;
+                }
 
                 commitEdit();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  // 変更を確定し、セルにフォーカスを戻す
+                  e.preventDefault();
+                  e.stopPropagation();
 
-                setSuppressBlurCommit(true);
-                requestAnimationFrame(() => {
-                  cellRef?.focus();
-                });
-              }
-              if (e.key === "Escape") {
-                // 変更をキャンセルし、セルにフォーカスを戻す
-                e.preventDefault();
-                e.stopPropagation();
+                  commitEdit();
 
-                resetEditing();
+                  setSuppressBlurCommit(true);
+                  requestAnimationFrame(() => {
+                    cellRef?.focus();
+                  });
+                }
+                if (e.key === "Escape") {
+                  // 変更をキャンセルし、セルにフォーカスを戻す
+                  e.preventDefault();
+                  e.stopPropagation();
 
-                setSuppressBlurCommit(true);
-                requestAnimationFrame(() => {
-                  cellRef?.focus();
-                });
-              }
-            }}
-          />
-        </TextField>
+                  resetEditing();
+
+                  setSuppressBlurCommit(true);
+                  requestAnimationFrame(() => {
+                    cellRef?.focus();
+                  });
+                }
+              }}
+            />
+          </TextField>
+        </Show>
+      </Table.Cell>
+
+      {/* Tooltip */}
+      <Show when={errorMessages().length > 0}>
+        <div
+          ref={tooltipRef}
+          popover
+          class={cn(
+            "bg-white shadow px-2 py-1.5 rounded-sm text-sm",
+            "absolute top-[calc(anchor(bottom)+0.25rem)] left-[anchor(center)] transform -translate-x-1/2",
+            "text-destructive bg-red-50",
+          )}
+          style={`position-anchor: ${anchorName};`}
+        >
+          <For each={errorMessages()}>{(message) => <p>{message}</p>}</For>
+        </div>
       </Show>
-    </Table.Cell>
+    </>
   );
 }
 
