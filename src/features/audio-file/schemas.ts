@@ -11,7 +11,14 @@ export type Artist = typeof Artist.infer;
 
 export const Artists = Artist.array()
   .moreThanLength(0)
-  .narrow((data) => new Set(data).size === data.length)
+  .narrow((data, ctx) => {
+    if (new Set(data).size === data.length) {
+      return true;
+    }
+    return ctx.reject({
+      expected: "unique",
+    });
+  })
   .brand("Artists");
 export type Artists = typeof Artists.infer;
 
