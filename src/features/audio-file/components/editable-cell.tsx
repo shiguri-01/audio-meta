@@ -149,7 +149,19 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
 export const PathCell = () => {
   const { path, setPath } = useAudioFileEditor();
 
-  return <EditableCell value={path} onCommit={setPath} />;
+  return (
+    <EditableCell
+      value={path}
+      onCommit={setPath}
+      transformValue={(input) => {
+        const result = Path(input.trim());
+        if (result instanceof type.errors) {
+          return err(result.issues.map((e) => e.message));
+        }
+        return ok(result);
+      }}
+    />
+  );
 };
 
 export const TitleCell = () => {
