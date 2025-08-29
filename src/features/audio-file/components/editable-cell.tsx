@@ -142,7 +142,7 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
                 commitEdit();
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (e.key === "Enter" && !e.isComposing) {
                   // 変更を確定し、セルにフォーカスを戻す
                   e.preventDefault();
                   e.stopPropagation();
@@ -154,7 +154,7 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
                     cellRef?.focus();
                   });
                 }
-                if (e.key === "Escape") {
+                if (e.key === "Escape" && !e.isComposing) {
                   // 変更をキャンセルし、セルにフォーカスを戻す
                   e.preventDefault();
                   e.stopPropagation();
