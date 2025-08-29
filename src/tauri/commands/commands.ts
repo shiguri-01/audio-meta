@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { fromPromise, okAsync } from "neverthrow";
+import { fromPromise, Result } from "neverthrow";
 import { type AudioFileDTO, audioFileFromDTO } from "../dto";
 import type {
   Commands,
@@ -11,34 +11,30 @@ import type {
 
 const selectDirectory: SelectDirectory = () => {
   return fromPromise(open({ multiple: false, directory: true }), (e) =>
-    String(e),
+    e instanceof Error ? e.message : String(e),
   );
 };
 
 const scanDirectory: ScanDirectory = ({ dir }) => {
-  return fromPromise<AudioFileDTO[], string>(
-    invoke("scan_directory", { dir }),
-    (e) => String(e),
-  ).andThen((dtos) => {
-    return okAsync(
-      dtos
-        .map(audioFileFromDTO)
-        .filter((file) => file.isOk())
-        .map((file) => file.value),
-    );
-  });
+  return fromPromise(invoke<AudioFileDTO[]>("scan_directory", { dir }), (e) =>
+    e instanceof Error ? e.message : String(e),
+  ).andThen((dtos) =>
+    Result.combineWithAllErrors(dtos.map(audioFileFromDTO)).mapErr((errs) =>
+      errs.flat().join("; "),
+    ),
+  );
 };
 
 const updateAudioFile: UpdateAudioFile = ({ patch }) => {
-  return fromPromise<AudioFileDTO, string>(
-    invoke("update_audio_file", { patch }),
-    (e) => String(e),
-  ).andThen((dto) =>
-    audioFileFromDTO(dto).mapErr((e) => {
-      const firstError = e.length > 0 ? e[0] : "Unknown error";
-      return firstError;
-    }),
-  );
+  return fromPromise(
+    invoke<AudioFileDTO>("update_audio_file", { patch }),
+    (e) => (e instanceof Error ? e.message : String(e)),
+  )
+    .andThen(audioFileFromDTO)
+    .mapErr((e) => {
+      if (typeof e === "string") return e;
+      return e.length > 0 ? e.join("; ") : "Unknown error";
+    });
 };
 
 export const commands: Commands = {
