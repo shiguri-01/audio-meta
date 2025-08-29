@@ -1,5 +1,5 @@
-import { okAsync } from "neverthrow";
-import type { AudioFileDTO } from "../dto";
+import { errAsync, okAsync } from "neverthrow";
+import { type AudioFileDTO, audioFileFromDTO } from "../dto";
 import type { Commands } from "./types";
 
 const mockAudioFiles: AudioFileDTO[] = [
@@ -31,25 +31,22 @@ export const mockCommands: Commands = {
 
   scanDirectory: ({ dir }) => {
     console.log(`Mock: Scanning directory ${dir}`);
-    return okAsync(mockAudioFiles);
+    return okAsync(
+      mockAudioFiles
+        .map(audioFileFromDTO)
+        .filter((file) => file.isOk())
+        .map((file) => file.value),
+    );
   },
 
   updateAudioFile: ({ patch }) => {
     console.log(`Mock: Updating audio file ${patch.id}`, patch);
     const existingFile = mockAudioFiles.find((f) => f.id === patch.id);
     if (!existingFile) {
-      return okAsync({
-        id: patch.id,
-        path: patch.path || "unknown.mp3",
-        id3_tag: {
-          title: patch.title || null,
-          artists: patch.artists || null,
-          album: patch.album || null,
-        },
-      });
+      return errAsync("File not found");
     }
 
-    const updatedFile: AudioFileDTO = {
+    const result = audioFileFromDTO({
       ...existingFile,
       path: patch.path ?? existingFile.path,
       id3_tag: {
@@ -57,8 +54,13 @@ export const mockCommands: Commands = {
         artists: patch.artists ?? existingFile.id3_tag.artists,
         album: patch.album ?? existingFile.id3_tag.album,
       },
-    };
+    });
 
-    return okAsync(updatedFile);
+    if (result.isErr()) {
+      const firstError =
+        result.error.length > 0 ? result.error[0] : "Unknown error";
+      return errAsync(firstError);
+    }
+    return okAsync(result.value);
   },
 };
