@@ -19,9 +19,10 @@ const scanDirectory: ScanDirectory = ({ dir }) => {
   return fromPromise(invoke<AudioFileDTO[]>("scan_directory", { dir }), (e) =>
     e instanceof Error ? e.message : String(e),
   ).andThen((dtos) =>
-    Result.combineWithAllErrors(dtos.map(audioFileFromDTO)).mapErr((errs) =>
-      errs.flat().join("; "),
-    ),
+    Result.combineWithAllErrors(dtos.map(audioFileFromDTO)).mapErr((errs) => {
+      const messages = errs.flat();
+      return messages.length > 0 ? messages.join("; ") : "Unknown error";
+    }),
   );
 };
 
