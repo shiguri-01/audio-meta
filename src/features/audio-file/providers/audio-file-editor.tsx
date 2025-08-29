@@ -4,18 +4,18 @@ import {
   type ParentComponent,
   useContext,
 } from "solid-js";
-import type { AudioFileDTO } from "@/tauri/dto";
 import {
   createEditableAudioFile,
   type EditableAudioFile,
 } from "../primitives/editable-audio-file";
+import type { AudioFile } from "../schemas";
 
 const AudioFileEditorContext = createContext<
-  EditableAudioFile & { original: Accessor<AudioFileDTO> }
+  EditableAudioFile & { original: Accessor<AudioFile> }
 >();
 
 export const AudioFileEditorProvider: ParentComponent<{
-  original: Accessor<AudioFileDTO>;
+  original: Accessor<AudioFile>;
 }> = (props) => {
   const editableFile = createEditableAudioFile(props.original);
 
@@ -29,7 +29,7 @@ export const AudioFileEditorProvider: ParentComponent<{
 };
 
 export const useAudioFileEditor = (): EditableAudioFile & {
-  original: Accessor<AudioFileDTO>;
+  original: Accessor<AudioFile>;
 } => {
   const context = useContext(AudioFileEditorContext);
   if (!context) {

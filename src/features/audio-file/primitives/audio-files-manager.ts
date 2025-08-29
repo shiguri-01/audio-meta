@@ -2,29 +2,28 @@ import { err, ok, type ResultAsync } from "neverthrow";
 import { type Accessor, createSignal } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import type { UpdateAudioFile } from "@/tauri/commands";
-import type { AudioFileDTO, AudioFilePatchDTO } from "@/tauri/dto";
+import type { AudioFilePatchDTO } from "@/tauri/dto";
+import type { AudioFile } from "../schemas";
 
 export interface AudioFilesManager {
-  audioFiles: AudioFileDTO[];
+  audioFiles: AudioFile[];
   isUpdating: Accessor<boolean>;
 
   /** 音声ファイルを更新する
    *
    * 更新を永続化する
    */
-  updateAudioFile: (
-    patch: AudioFilePatchDTO,
-  ) => ResultAsync<AudioFileDTO, string>;
+  updateAudioFile: (patch: AudioFilePatchDTO) => ResultAsync<AudioFile, string>;
   /**
    * オーディオファイルリストを新しいリストに置き換える
    *
    * 現在管理しているファイルをすべてクリアし、新しいファイルリストで置き換える
    */
-  replaceAllAudioFiles: (audioFiles: AudioFileDTO[]) => void;
+  replaceAllAudioFiles: (audioFiles: AudioFile[]) => void;
 }
 
 export const createAudioFilesManager = (
-  initialAudioFiles: AudioFileDTO[],
+  initialAudioFiles: AudioFile[],
   { updateAudioFileCommand }: { updateAudioFileCommand: UpdateAudioFile },
 ): AudioFilesManager => {
   const [audioFiles, setAudioFiles] = createStore(initialAudioFiles);
@@ -32,7 +31,7 @@ export const createAudioFilesManager = (
 
   const updateAudioFile = (
     patch: AudioFilePatchDTO,
-  ): ResultAsync<AudioFileDTO, string> => {
+  ): ResultAsync<AudioFile, string> => {
     setIsUpdating(true);
 
     return updateAudioFileCommand({ patch })
@@ -54,7 +53,7 @@ export const createAudioFilesManager = (
       });
   };
 
-  const replaceAllAudioFiles = (audioFiles: AudioFileDTO[]) => {
+  const replaceAllAudioFiles = (audioFiles: AudioFile[]) => {
     setAudioFiles(audioFiles);
   };
 

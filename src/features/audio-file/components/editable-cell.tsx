@@ -1,49 +1,48 @@
 import { TextField } from "@kobalte/core/text-field";
+import { type } from "arktype";
+import { err, ok, type Result } from "neverthrow";
 import {
   type Accessor,
+  batch,
   createEffect,
-  createMemo,
   createSignal,
+  For,
   Show,
 } from "solid-js";
 import { Table } from "@/components/table";
 import { cn } from "@/utils/style";
 import { useAudioFileEditor } from "../providers/audio-file-editor";
-
+import { Album, Artists, Path, Title } from "../schemas";
 export type EditableCellProps<TValue> = {
   value: Accessor<TValue>;
   onCommit: (value: TValue) => void;
   /**
-   * valueを表示用の文字列に変換する
+   * 実際の値(TValue)を表示用の文字列に変換する
    */
   formatValue?: (value: TValue) => string;
   /**
-   * 入力された文字列をvalueに変換する
+   * 入力値を実際の値(TValue)に変換する
    */
-  parseValue?: (value: string) => TValue;
+  transformValue?: (input: string) => Result<TValue, string[]>;
 };
 
 function EditableCell<TValue>(props: EditableCellProps<TValue>) {
+  // TODO: Tooltipを汎用的に使えるように切り出す
+
   const formatValue = props.formatValue || ((value: TValue) => String(value));
-  const parseValue =
-    props.parseValue || ((value: string) => value as unknown as TValue);
+
+  const transformValue =
+    props.transformValue || ((input: string) => ok(input as unknown as TValue));
 
   const [inputValue, setInputValue] = createSignal<string>(
     formatValue(props.value()),
   );
   const [isEditing, setIsEditing] = createSignal(false);
-
-  // TODO: バリデーションを組み込むタイミングで、inputValueそのままと（必要に応じて）エラーメッセージを表示する
-  const displayValue = createMemo(() => formatValue(props.value()));
-
-  createEffect(() => {
-    if (!isEditing()) {
-      setInputValue(formatValue(props.value()));
-    }
-  });
+  const [errorMessages, setErrorMessages] = createSignal<string[]>([]);
 
   let cellRef: HTMLTableCellElement | undefined;
   let inputRef: HTMLInputElement | undefined;
+  let tooltipRef: HTMLDivElement | undefined;
 
   const [suppressBlurCommit, setSuppressBlurCommit] = createSignal(false);
 
@@ -51,94 +50,160 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
     if (isEditing()) return;
 
     setIsEditing(true);
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       inputRef?.focus();
-    }, 0);
+    });
   };
 
   const commitEdit = () => {
-    const newValue = parseValue(inputValue());
-    setIsEditing(false);
-    props.onCommit(newValue);
+    batch(() => {
+      setIsEditing(false);
+      const newValue = transformValue(inputValue());
+
+      if (newValue.isOk()) {
+        props.onCommit(newValue.value);
+        setErrorMessages([]);
+      } else {
+        setErrorMessages(newValue.error);
+      }
+    });
   };
 
   const resetEditing = () => {
-    setInputValue(formatValue(props.value()));
-    setIsEditing(false);
+    batch(() => {
+      setInputValue(formatValue(props.value()));
+      setIsEditing(false);
+    });
   };
 
-  return (
-    <Table.Cell
-      ref={cellRef}
-      tabIndex={0}
-      onClick={beginEditing}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" && !isEditing()) {
-          beginEditing();
-        }
-      }}
-      class={cn(
-        "cursor-pointer",
-        isEditing() && "outline-2 outline-blue-500 ring-4 ring-blue-200",
-      )}
-    >
-      <Show
-        when={isEditing()}
-        fallback={
-          <span class={cn("size-stretch overflow-hidden")}>
-            {displayValue()}
-          </span>
-        }
-      >
-        <TextField value={inputValue()} onChange={setInputValue}>
-          <TextField.Input
-            ref={inputRef}
-            class="focus:outline-none size-stretch"
-            onBlur={() => {
-              if (suppressBlurCommit()) {
-                setSuppressBlurCommit(false);
-                return;
-              }
+  createEffect(() => {
+    if (!isEditing()) {
+      setInputValue(formatValue(props.value()));
+    }
+  });
 
-              commitEdit();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                // 変更を確定し、セルにフォーカスを戻す
-                e.preventDefault();
-                e.stopPropagation();
+  // 入力値が変わるたびにバリデーションを実行する
+  createEffect(() => {
+    if (!isEditing()) return;
+    const newValue = transformValue(inputValue());
+    setErrorMessages(newValue.isOk() ? [] : newValue.error);
+  });
+
+  // ランダムなアンカー名を生成する（セルごとに固有のアンカー名が必要となるため）
+  const anchorName = `--anchor-${Math.random().toString().slice(2)}`;
+
+  return (
+    <>
+      <Table.Cell
+        ref={cellRef}
+        tabIndex={0}
+        onClick={beginEditing}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !isEditing()) {
+            beginEditing();
+          }
+        }}
+        class={cn(
+          "cursor-pointer",
+          isEditing() && "outline-2 outline-blue-500 ring-4 ring-blue-200",
+          errorMessages().length > 0 && "bg-red-100",
+        )}
+        onMouseEnter={() => {
+          tooltipRef?.showPopover();
+        }}
+        onMouseLeave={() => {
+          tooltipRef?.hidePopover();
+        }}
+        style={`anchor-name: ${anchorName};`}
+      >
+        <Show
+          when={isEditing()}
+          fallback={
+            <span class={cn("size-stretch overflow-hidden")}>
+              {inputValue()}
+            </span>
+          }
+        >
+          <TextField value={inputValue()} onChange={setInputValue}>
+            <TextField.Input
+              ref={inputRef}
+              class="focus:outline-none size-stretch"
+              onBlur={() => {
+                console.log("blur");
+                console.log({ suppressBlurCommit: suppressBlurCommit() });
+                if (suppressBlurCommit()) {
+                  setSuppressBlurCommit(false);
+                  return;
+                }
 
                 commitEdit();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.isComposing) {
+                  // 変更を確定し、セルにフォーカスを戻す
+                  e.preventDefault();
+                  e.stopPropagation();
 
-                setSuppressBlurCommit(true);
-                requestAnimationFrame(() => {
-                  cellRef?.focus();
-                });
-              }
-              if (e.key === "Escape") {
-                // 変更をキャンセルし、セルにフォーカスを戻す
-                e.preventDefault();
-                e.stopPropagation();
+                  commitEdit();
 
-                resetEditing();
+                  setSuppressBlurCommit(true);
+                  requestAnimationFrame(() => {
+                    cellRef?.focus();
+                  });
+                }
+                if (e.key === "Escape" && !e.isComposing) {
+                  // 変更をキャンセルし、セルにフォーカスを戻す
+                  e.preventDefault();
+                  e.stopPropagation();
 
-                setSuppressBlurCommit(true);
-                requestAnimationFrame(() => {
-                  cellRef?.focus();
-                });
-              }
-            }}
-          />
-        </TextField>
+                  resetEditing();
+
+                  setSuppressBlurCommit(true);
+                  requestAnimationFrame(() => {
+                    cellRef?.focus();
+                  });
+                }
+              }}
+            />
+          </TextField>
+        </Show>
+      </Table.Cell>
+
+      {/* Tooltip */}
+      <Show when={errorMessages().length > 0}>
+        <div
+          ref={tooltipRef}
+          popover
+          class={cn(
+            "bg-white shadow px-2 py-1.5 rounded-sm text-sm",
+            "absolute top-[calc(anchor(bottom)+0.25rem)] left-[anchor(center)] transform -translate-x-1/2",
+            "text-destructive bg-red-50",
+          )}
+          style={`position-anchor: ${anchorName};`}
+        >
+          <For each={errorMessages()}>{(message) => <p>{message}</p>}</For>
+        </div>
       </Show>
-    </Table.Cell>
+    </>
   );
 }
 
 export const PathCell = () => {
   const { path, setPath } = useAudioFileEditor();
 
-  return <EditableCell value={path} onCommit={setPath} />;
+  return (
+    <EditableCell
+      value={path}
+      onCommit={setPath}
+      transformValue={(input) => {
+        const result = Path(input.trim());
+        if (result instanceof type.errors) {
+          return err(result.issues.map((e) => e.message));
+        }
+        return ok(result);
+      }}
+    />
+  );
 };
 
 export const TitleCell = () => {
@@ -149,7 +214,14 @@ export const TitleCell = () => {
       value={title}
       onCommit={setTitle}
       formatValue={(value) => value ?? ""}
-      parseValue={(value) => value.trim() || null}
+      transformValue={(input) => {
+        const schema = Title.or(type("null"));
+        const result = schema(input.trim().length > 0 ? input.trim() : null);
+        if (result instanceof type.errors) {
+          return err(result.issues.map((e) => e.message));
+        }
+        return ok(result);
+      }}
     />
   );
 };
@@ -162,13 +234,18 @@ export const ArtistsCell = () => {
       value={artists}
       onCommit={setArtists}
       formatValue={(value) => (value ? value.join(", ") : "")}
-      parseValue={(value) => {
-        const artists = value
+      transformValue={(input) => {
+        const raw = input
           .trim()
           .split(",")
           .map((artist) => artist.trim())
           .filter((artist) => artist !== "");
-        return artists.length > 0 ? artists : null;
+        const schema = Artists.or(type("null"));
+        const result = schema(raw.length > 0 ? raw : null);
+        if (result instanceof type.errors) {
+          return err(result.issues.map((e) => e.message));
+        }
+        return ok(result);
       }}
     />
   );
@@ -182,7 +259,14 @@ export const AlbumCell = () => {
       value={album}
       onCommit={setAlbum}
       formatValue={(value) => value ?? ""}
-      parseValue={(value) => value.trim() || null}
+      transformValue={(input) => {
+        const schema = Album.or(type("null"));
+        const result = schema(input.trim().length > 0 ? input.trim() : null);
+        if (result instanceof type.errors) {
+          return err(result.issues.map((e) => e.message));
+        }
+        return ok(result);
+      }}
     />
   );
 };

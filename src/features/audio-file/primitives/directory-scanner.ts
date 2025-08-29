@@ -1,7 +1,7 @@
 import { err, ok, type ResultAsync } from "neverthrow";
 import { type Accessor, createSignal } from "solid-js";
 import type { ScanDirectory, SelectDirectory } from "@/tauri/commands";
-import type { AudioFileDTO } from "@/tauri/dto";
+import type { AudioFile } from "../schemas";
 
 export interface DirectoryScanner {
   selectedDirectory: Accessor<string | null>;
@@ -10,7 +10,7 @@ export interface DirectoryScanner {
   /**
    * ディレクトリ選択ダイアログを開き、選択されたディレクトリの音声ファイルを走査する
    */
-  selectAndScanDirectory: () => ResultAsync<AudioFileDTO[], string>;
+  selectAndScanDirectory: () => ResultAsync<AudioFile[], string>;
 }
 
 export const createDirectoryScanner = ({
@@ -25,7 +25,7 @@ export const createDirectoryScanner = ({
   );
   const [isLoading, setIsLoading] = createSignal<boolean>(false);
 
-  const selectAndScanDirectory = (): ResultAsync<AudioFileDTO[], string> => {
+  const selectAndScanDirectory = (): ResultAsync<AudioFile[], string> => {
     setIsLoading(true);
 
     return selectDirectoryCommand()

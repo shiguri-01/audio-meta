@@ -6,13 +6,13 @@ import {
 } from "@tanstack/solid-table";
 import { For } from "solid-js";
 import { Table } from "@/components/table";
-import type { AudioFileDTO } from "@/tauri/dto";
 import { AudioFileEditorProvider } from "../providers/audio-file-editor";
 import { useAudioFilesManager } from "../providers/audio-files-manager-provider";
+import type { AudioFile } from "../schemas";
 import { SaveButton } from "./ActionCell";
 import { AlbumCell, ArtistsCell, PathCell, TitleCell } from "./editable-cell";
 
-const columnHelper = createColumnHelper<AudioFileDTO>();
+const columnHelper = createColumnHelper<AudioFile>();
 
 const columns = [
   columnHelper.accessor("id", {
@@ -23,15 +23,15 @@ const columns = [
     header: () => "Path",
     cell: () => <PathCell />,
   }),
-  columnHelper.accessor("id3_tag.title", {
+  columnHelper.accessor("id3Tag.title", {
     header: () => "Title",
     cell: () => <TitleCell />,
   }),
-  columnHelper.accessor("id3_tag.artists", {
+  columnHelper.accessor("id3Tag.artists", {
     header: () => "Artists",
     cell: () => <ArtistsCell />,
   }),
-  columnHelper.accessor("id3_tag.album", {
+  columnHelper.accessor("id3Tag.album", {
     header: () => "Album",
     cell: () => <AlbumCell />,
   }),
