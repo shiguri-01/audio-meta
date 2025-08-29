@@ -84,12 +84,9 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
 
   // 入力値が変わるたびにバリデーションを実行する
   createEffect(() => {
+    if (!isEditing()) return;
     const newValue = transformValue(inputValue());
-    if (newValue.isOk()) {
-      setErrorMessages([]);
-    } else {
-      setErrorMessages(newValue.error);
-    }
+    setErrorMessages(newValue.isOk() ? [] : newValue.error);
   });
 
   // ランダムなアンカー名を生成する（セルごとに固有のアンカー名が必要となるため）
