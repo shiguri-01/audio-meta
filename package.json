@@ -14,6 +14,7 @@
     "fmt:front": "biome format --write",
     "fmt:back": "cargo fmt --manifest-path src-tauri/Cargo.toml",
     "test:front": "vitest",
+    "test:back": "cargo test --manifest-path src-tauri/Cargo.toml",
     "tauri": "tauri"
   },
   "dependencies": {
