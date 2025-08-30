@@ -197,7 +197,7 @@ async fn list_files(req: ListFilesRequest) -> Result<ListFilesResponse, AppError
   - `features/{domain}/index.ts`で各機能が公開するAPIをまとめてエクスポートする。
 - `src/main.tsx`: アプリケーションのエントリーポイント。編集禁止。
 - `src/routeTree.gen.ts`: ルート定義の自動生成ファイル。編集禁止。
-- `src/styles.css`: Tailwind CSSの設定ファイル
+- `src/styles.css`: グローバルスタイルのエントリCSS・Tailwind CSSの設定
 
 ### コマンド
 
