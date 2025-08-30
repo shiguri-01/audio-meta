@@ -216,7 +216,7 @@ async fn list_files(req: ListFilesRequest) -> Result<ListFilesResponse, AppError
 
 ### 実装ガイド
 
-仕様するライブラリやフレームワークのベストプラクティスに従う。
+使用するライブラリやフレームワークのベストプラクティスに従う。
 Context 7 MCP Serverを利用してライブラリのドキュメントを参照することができる。
 
 #### パスエイリアス
