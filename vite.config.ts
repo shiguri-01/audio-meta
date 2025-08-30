@@ -1,6 +1,6 @@
 /// <reference types="vitest" />
 import tailwindcss from "@tailwindcss/vite";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import tanstackRouter from "@tanstack/router-plugin/vite";
 import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
 import tsconfigPaths from "vite-tsconfig-paths";
@@ -10,7 +10,7 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    TanStackRouterVite({ target: "solid", autoCodeSplitting: true }),
+    tanstackRouter({ target: "solid", autoCodeSplitting: true }),
     solidPlugin(),
     tailwindcss(),
     tsconfigPaths(),
@@ -28,7 +28,7 @@ export default defineConfig({
           host,
           port: 1421,
         }
-      : undefined,
+      : true,
 
     watch: {
       ignored: ["**/src-tauri/**"],
