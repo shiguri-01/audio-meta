@@ -13,6 +13,7 @@
     "lint:back": "cargo clippy --manifest-path src-tauri/Cargo.toml",
     "fmt:front": "biome format --write",
     "fmt:back": "cargo fmt --manifest-path src-tauri/Cargo.toml",
+    "test:front": "vitest",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -34,14 +35,19 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.1.4",
+    "@solidjs/testing-library": "^0.8.10",
     "@tauri-apps/cli": "^2.7.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/lodash": "^4.17.20",
     "@types/node": "^24.2.1",
     "cross-env": "^10.0.0",
+    "jsdom": "^26.1.0",
     "lefthook": "^1.12.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.11",
     "vite-plugin-solid": "^2.11.2",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
   }
 }

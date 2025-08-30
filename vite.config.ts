@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import { defineConfig } from "vite";
