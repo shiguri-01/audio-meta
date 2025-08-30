@@ -84,6 +84,7 @@ const tableKeyboardNav = (el: HTMLTableElement) => {
     el.removeEventListener("keydown", handleKeyDown);
   });
 };
+tableKeyboardNav; // tsで未使用警告を出させないための措置
 
 const TableRoot: Component<ComponentProps<"table">> = (props) => {
   const [local, rest] = splitProps(props, ["class", "children"]);
