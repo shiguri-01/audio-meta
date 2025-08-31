@@ -10,9 +10,50 @@
   --color-bg: var(--color-white);
   --color-bg-surface: var(--color-neutral-100);
   --color-fg: var(--color-neutral-950);
-  --color-fg-muted: var(--color-neutral-400);
-
+  --color-fg-muted: color-mix(in oklab, var(--color-fg) 40%, transparent);
   --color-border: var(--color-neutral-300);
+
+  --color-primary-bg: var(--color-neutral-900);
+  --color-primary-bg-muted: color-mix(
+    in oklab,
+    var(--color-primary-bg) 50%,
+    transparent
+  );
+  --color-primary-bg-hover: var(--color-neutral-800);
+  --color-primary-fg: var(--color-white);
+  --color-primary-fg-muted: color-mix(
+    in oklab,
+    var(--color-primary-fg) 50%,
+    transparent
+  );
+  --color-primary-border: var(--color-neutral-900);
+
+  --color-secondary-bg: var(--color-white);
+  --color-secondary-bg-muted: color-mix(
+    in oklab,
+    var(--color-secondary-bg) 50%,
+    transparent
+  );
+  --color-secondary-bg-hover: var(--color-neutral-100);
+  --color-secondary-fg: var(--color-neutral-950);
+  --color-secondary-fg-muted: color-mix(
+    in oklab,
+    var(--color-secondary-fg) 50%,
+    transparent
+  );
+  --color-secondary-border: var(--color-neutral-300);
+
+  --color-tertiary-bg: transparent;
+  --color-tertiary-bg-muted: transparent;
+  --color-tertiary-bg-hover: color-mix(
+    in oklab,
+    var(--color-neutral-300) 20%,
+    transparent
+  );
+  --color-tertiary-fg: var(--color-fg);
+  --color-tertiary-fg-muted: var(--color-fg-muted);
+  --color-tertiary-border: transparent;
+
   --color-destructive: var(--color-red-600);
 }
 

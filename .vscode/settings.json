@@ -11,7 +11,7 @@
   "files.associations": {
     "*.css": "tailwindcss"
   },
-  "tailwindCSS.classFunctions": ["cn", "clsx", "twMerge"],
+  "tailwindCSS.classFunctions": ["cn", "clsx", "twMerge", "cva"],
   "editor.quickSuggestions": {
     "strings": "on"
   },
