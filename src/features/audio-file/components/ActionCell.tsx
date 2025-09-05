@@ -1,11 +1,14 @@
-import { Button } from "@kobalte/core/button";
-import { cn } from "@/utils/style";
+import { SaveIcon } from "lucide-solid";
+import { IconButton } from "@/components/button";
+import { Tooltip } from "@/components/tooltip";
 import { useAudioFileEditor } from "../providers/audio-file-editor";
 import { useAudioFilesManager } from "../providers/audio-files-manager-provider";
 
 export const SaveButton = () => {
   const { getPatch } = useAudioFileEditor();
   const { updateAudioFile, isUpdating } = useAudioFilesManager();
+
+  let buttonRef!: HTMLButtonElement;
 
   const handleSave = () => {
     if (isUpdating()) return;
@@ -16,12 +19,16 @@ export const SaveButton = () => {
   };
 
   return (
-    <Button
-      onClick={handleSave}
-      disabled={isUpdating()}
-      class={cn(isUpdating() && "text-fg-muted")}
-    >
-      Save
-    </Button>
+    <>
+      <IconButton
+        ref={buttonRef}
+        onClick={handleSave}
+        disabled={getPatch() === null || isUpdating()}
+        icon={SaveIcon}
+        variant={"tertiary"}
+        class="text-sm p-1"
+      />
+      <Tooltip trigger={buttonRef}>保存</Tooltip>
+    </>
   );
 };

@@ -10,6 +10,7 @@ import {
   Show,
 } from "solid-js";
 import { Table } from "@/components/table";
+import { Tooltip } from "@/components/tooltip";
 import { cn } from "@/utils/style";
 import { useAudioFileEditor } from "../providers/audio-file-editor";
 import { Album, Artists, Path, Title } from "../schemas";
@@ -27,8 +28,6 @@ export type EditableCellProps<TValue> = {
 };
 
 function EditableCell<TValue>(props: EditableCellProps<TValue>) {
-  // TODO: Tooltipを汎用的に使えるように切り出す
-
   const formatValue = props.formatValue || ((value: TValue) => String(value));
 
   const transformValue =
@@ -40,9 +39,8 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
   const [isEditing, setIsEditing] = createSignal(false);
   const [errorMessages, setErrorMessages] = createSignal<string[]>([]);
 
-  let cellRef: HTMLTableCellElement | undefined;
+  let cellRef!: HTMLTableCellElement;
   let inputRef: HTMLInputElement | undefined;
-  let tooltipRef: HTMLDivElement | undefined;
 
   const [suppressBlurCommit, setSuppressBlurCommit] = createSignal(false);
 
@@ -89,9 +87,6 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
     setErrorMessages(newValue.isOk() ? [] : newValue.error);
   });
 
-  // ランダムなアンカー名を生成する（セルごとに固有のアンカー名が必要となるため）
-  const anchorName = `--anchor-${Math.random().toString().slice(2)}`;
-
   return (
     <>
       <Table.Cell
@@ -105,16 +100,9 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
         }}
         class={cn(
           "cursor-pointer",
-          isEditing() && "outline-2 outline-blue-500 ring-4 ring-blue-200",
-          errorMessages().length > 0 && "bg-red-100",
+          isEditing() && "outline-2 outline-focus-ring ring-4 ring-blue-200",
+          errorMessages().length > 0 && "bg-destructive-bg",
         )}
-        onMouseEnter={() => {
-          tooltipRef?.showPopover();
-        }}
-        onMouseLeave={() => {
-          tooltipRef?.hidePopover();
-        }}
-        style={`anchor-name: ${anchorName};`}
       >
         <Show
           when={isEditing()}
@@ -129,8 +117,6 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
               ref={inputRef}
               class="focus:outline-none size-stretch"
               onBlur={() => {
-                console.log("blur");
-                console.log({ suppressBlurCommit: suppressBlurCommit() });
                 if (suppressBlurCommit()) {
                   setSuppressBlurCommit(false);
                   return;
@@ -148,7 +134,7 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
 
                   setSuppressBlurCommit(true);
                   requestAnimationFrame(() => {
-                    cellRef?.focus();
+                    cellRef.focus();
                   });
                 }
                 if (e.key === "Escape" && !e.isComposing) {
@@ -160,7 +146,7 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
 
                   setSuppressBlurCommit(true);
                   requestAnimationFrame(() => {
-                    cellRef?.focus();
+                    cellRef.focus();
                   });
                 }
               }}
@@ -171,18 +157,13 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
 
       {/* Tooltip */}
       <Show when={errorMessages().length > 0}>
-        <div
-          ref={tooltipRef}
-          popover
-          class={cn(
-            "bg-white shadow px-2 py-1.5 rounded-sm text-sm",
-            "absolute top-[calc(anchor(bottom)+0.25rem)] left-[anchor(center)] transform -translate-x-1/2",
-            "text-destructive bg-red-50",
-          )}
-          style={`position-anchor: ${anchorName};`}
+        <Tooltip
+          trigger={cellRef}
+          visible={isEditing() ? "always" : "auto"}
+          class="text-destructive-fg"
         >
           <For each={errorMessages()}>{(message) => <p>{message}</p>}</For>
-        </div>
+        </Tooltip>
       </Show>
     </>
   );
@@ -238,7 +219,7 @@ export const ArtistsCell = () => {
         const raw = input
           .trim()
           .split(",")
-          .map((artist) => artist.trim())
+          // .map((artist) => artist.trim())
           .filter((artist) => artist !== "");
         const schema = Artists.or(type("null"));
         const result = schema(raw.length > 0 ? raw : null);
