@@ -54,11 +54,14 @@
   --color-tertiary-fg-muted: var(--color-fg-muted);
   --color-tertiary-border: transparent;
 
-  --color-destructive: var(--color-red-600);
+  --color-destructive-bg: var(--color-red-100);
+  --color-destructive-fg: var(--color-red-600);
+
+  --color-focus-ring: var(--color-blue-500);
 }
 
 body {
-  @apply m-0 font-sans bg-bg text-fg border-border;
+  @apply m-0 font-sans bg-bg text-fg border-border **:focus:outline-2 **:focus:outline-focus-ring;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
