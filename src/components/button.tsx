@@ -1,6 +1,6 @@
 import { Button as KButton } from "@kobalte/core/button";
 import { cva, type VariantProps } from "class-variance-authority";
-import type { LucideIcon } from "lucide-solid";
+import type { LucideProps } from "lucide-solid";
 import { type Component, type ComponentProps, splitProps } from "solid-js";
 import { cn } from "@/utils/style";
 
@@ -52,7 +52,11 @@ const Button: Component<
 
 const IconButton: Component<
   Omit<ComponentProps<typeof KButton>, "children"> &
-    VariantProps<typeof buttonVariants> & { icon: LucideIcon; children?: never }
+    VariantProps<typeof buttonVariants> & {
+      icon: Component<LucideProps>;
+      "aria-label": string;
+      children?: never;
+    }
 > = (props) => {
   const [local, rest] = splitProps(props, ["class", "variant", "icon"]);
   return (
@@ -64,7 +68,7 @@ const IconButton: Component<
       )}
       {...rest}
     >
-      <local.icon size={"1.2em"} />
+      <local.icon size={"1.2em"} aria-hidden={true} />
     </KButton>
   );
 };
