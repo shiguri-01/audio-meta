@@ -12,7 +12,7 @@ export const Route = createFileRoute("/")({
 function IndexComponent() {
   return (
     <AudioFilesManagerProvider>
-      <main>
+      <main class="w-full h-full p-3 *:mt-3 *:first:mt-0">
         <DirectorySelector />
         <AudioFileEditorTable />
       </main>
