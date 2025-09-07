@@ -219,7 +219,7 @@ export const ArtistsCell = () => {
         const raw = input
           .trim()
           .split(",")
-          // .map((artist) => artist.trim())
+          .map((artist) => artist.trim())
           .filter((artist) => artist !== "");
         const schema = Artists.or(type("null"));
         const result = schema(raw.length > 0 ? raw : null);
