@@ -11,6 +11,7 @@ import {
   splitProps,
   untrack,
 } from "solid-js";
+import { addAriaDescribedBy, removeAriaDescribedBy } from "@/utils/a11y";
 import { cn } from "@/utils/style";
 
 const tooltipVariants = cva(
@@ -99,15 +100,15 @@ export const Tooltip: ParentComponent<
 
     const currentId = id();
     trigger.setAttribute("popovertarget", currentId);
-    trigger.setAttribute("aria-describedby", currentId);
     trigger.style.setProperty("anchor-name", getTooltipName(currentId));
+    addAriaDescribedBy(trigger, currentId);
 
     onCleanup(() => {
       clearMouseEnter();
       clearMouseLeave();
       trigger.removeAttribute("popovertarget");
-      trigger.removeAttribute("aria-describedby");
       trigger.style.removeProperty("anchor-name");
+      removeAriaDescribedBy(trigger, currentId);
     });
   });
 
