@@ -25,6 +25,7 @@ export const SaveButton = () => {
         onClick={handleSave}
         disabled={getPatch() === null || isUpdating()}
         icon={SaveIcon}
+        aria-label="保存"
         variant={"tertiary"}
         class="text-sm p-1"
       />
