@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import tailwindcss from "@tailwindcss/vite";
 import tanstackRouter from "@tanstack/router-plugin/vite";
+import devtools from "solid-devtools/vite";
 import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
 import tsconfigPaths from "vite-tsconfig-paths";
@@ -11,6 +12,7 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig({
   plugins: [
     tanstackRouter({ target: "solid", autoCodeSplitting: true }),
+    devtools({ autoname: true, locator: true }),
     solidPlugin(),
     tailwindcss(),
     tsconfigPaths(),

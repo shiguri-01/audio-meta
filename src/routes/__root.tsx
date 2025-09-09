@@ -2,6 +2,7 @@ import { createRootRouteWithContext, Outlet } from "@tanstack/solid-router";
 import { TanStackRouterDevtools } from "@tanstack/solid-router-devtools";
 import { Suspense } from "solid-js";
 import { CommandsProvider } from "../tauri/commands";
+import "solid-devtools";
 
 export const Route = createRootRouteWithContext()({
   component: RootComponent,
