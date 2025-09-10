@@ -1,25 +1,28 @@
+import { type } from "arktype";
 import { errAsync, okAsync } from "neverthrow";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDirectoryScanner } from "@/features/audio-file/primitives/directory-scanner";
-import type { AudioFile } from "@/features/audio-file/schemas";
-import { audioFileFromDTO } from "@/tauri/dto";
+import {
+  type AudioFile,
+  AudioFile as AudioFileSchema,
+} from "@/features/audio-file/schemas";
 
 describe("createDirectoryScanner", () => {
   const createMockAudioFile = (id: string): AudioFile => {
-    const dto = {
+    const raw = {
       id,
       path: `/mock/path/${id}.mp3`,
-      id3_tag: {
+      id3Tag: {
         title: `Mock Title ${id}`,
         artists: ["Mock Artist"],
         album: "Mock Album",
       },
     };
-
-    const result = audioFileFromDTO(dto);
-    if (result.isErr())
-      throw new Error(`Mock creation failed: ${result.error}`);
-    return result.value;
+    const parsed = AudioFileSchema(raw);
+    if (parsed instanceof type.errors) {
+      throw parsed;
+    }
+    return parsed;
   };
 
   const createMockCommands = () => {
@@ -174,7 +177,7 @@ describe("createDirectoryScanner", () => {
     it("空のディレクトリでもスキャンが成功する", async () => {
       // Given
       const mockDirectory = "C:\\Music\\Empty";
-      const mockFiles: AudioFile[] = [];
+      const mockFiles: AudioFileSchema[] = [];
       const mockCommands = createMockCommands();
       mockCommands.selectDirectoryCommand.mockReturnValue(
         okAsync(mockDirectory),
