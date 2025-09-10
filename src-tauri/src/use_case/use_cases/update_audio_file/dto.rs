@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    domain::{audio_file::AudioFilePatch, audio_file::AudioFilePath, id3},
+    domain::{audio_file::AudioFileChanges, audio_file::AudioFilePath, id3},
     utils::error::ValidationError,
 };
 
@@ -38,15 +38,15 @@ pub struct AudioFilePatchDTO {
     pub changes: AudioFileChangesDTO,
 }
 
-impl AudioFilePatch {
-    pub fn from(dto: AudioFileChangesDTO) -> Result<AudioFilePatch, ValidationError> {
+impl AudioFileChanges {
+    pub fn from(dto: AudioFileChangesDTO) -> Result<AudioFileChanges, ValidationError> {
         let path = dto
             .path
             .map(|p| AudioFilePath::new(PathBuf::from(p)))
             .transpose()?;
         let id3_tag = dto.id3_tag.map(id3::Id3TagChanges::from).transpose()?;
 
-        Ok(AudioFilePatch { path, id3_tag })
+        Ok(AudioFileChanges { path, id3_tag })
     }
 }
 

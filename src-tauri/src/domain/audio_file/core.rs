@@ -171,7 +171,7 @@ impl AudioFile {
     }
 
     /// パッチを適用する
-    pub fn apply_patch(&self, patch: &AudioFilePatch) -> Self {
+    pub fn apply_patch(&self, patch: &AudioFileChanges) -> Self {
         Self {
             id: self.id,
             path: patch.path.clone().unwrap_or(self.path.clone()),
@@ -183,12 +183,12 @@ impl AudioFile {
     }
 }
 
-/// AudioFileの更新用パッチ
+/// AudioFileの変更点
 ///
 /// * Some(value) - 値を更新
 /// * None - 変更なし
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AudioFilePatch {
+pub struct AudioFileChanges {
     pub path: Option<AudioFilePath>,
     pub id3_tag: Option<Id3TagChanges>,
 }
@@ -265,7 +265,7 @@ mod tests {
 
         let new_path = AudioFilePath::new(PathBuf::from("new_test.mp3")).unwrap();
         let new_title = Some(Title::new("New Title").unwrap());
-        let patch = AudioFilePatch {
+        let patch = AudioFileChanges {
             path: Some(new_path.clone()),
             id3_tag: Some(Id3TagChanges {
                 title: Some(new_title.clone()),
@@ -285,7 +285,7 @@ mod tests {
         let id3_tag = Id3Tag::new(None, None, None);
         let audio_file = AudioFile::new(path, id3_tag);
 
-        let patch = AudioFilePatch {
+        let patch = AudioFileChanges {
             path: None,
             id3_tag: None,
         };

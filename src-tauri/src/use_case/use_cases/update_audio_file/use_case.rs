@@ -1,5 +1,5 @@
 use crate::{
-    domain::audio_file::{AudioFile, AudioFilePatch, AudioFileRepository},
+    domain::audio_file::{AudioFile, AudioFileChanges, AudioFileRepository},
     use_case::error::ApplicationError,
     utils::error::AudioFileError,
 };
@@ -27,7 +27,7 @@ impl<'a> UpdateAudioFileUseCase<'a> {
             },
         )?;
 
-        let patch = AudioFilePatch::from(patch_dto.changes)?;
+        let patch = AudioFileChanges::from(patch_dto.changes)?;
         let updated_audio_file = audio_file.apply_patch(&patch);
 
         self.repository.save(&updated_audio_file).await?;
