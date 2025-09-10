@@ -127,7 +127,7 @@ describe("createAudioFileStore", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) expect(result.value.id3Tag.title).toBe("New");
       expect(updateFn).toHaveBeenCalledWith({
-        patch: { id: "1", title: "New" },
+        patch: { id: "1", changes: { id3Tag: { title: "New" } } },
       });
       expect(store.changes()["1"]).toBeUndefined();
       expect(store.isDirty()).toBe(false);

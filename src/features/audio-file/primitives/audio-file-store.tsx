@@ -9,7 +9,6 @@ import {
 } from "solid-js";
 import { createStore, produce, reconcile } from "solid-js/store";
 import { type UpdateAudioFile, useCommands } from "@/tauri/commands";
-import type { AudioFilePatchDTO } from "@/tauri/dto";
 import {
   type AudioFile,
   type AudioFileChanges,
@@ -86,30 +85,6 @@ const hasEffectiveChanges = (
       typeof tag.artists !== "undefined" ||
       typeof tag.album !== "undefined")
   );
-};
-
-// 一時的な変換関数
-// TODO: AudioFilePatchDTOではなくAudioFileChangesを使うようにする
-const convertChangesToDTO = (
-  changes: AudioFileChanges,
-  id: string,
-): AudioFilePatchDTO => {
-  const dto: AudioFilePatchDTO = { id };
-  if (changes.path !== undefined) {
-    dto.path = changes.path;
-  }
-  if (changes.id3Tag !== undefined) {
-    if (changes.id3Tag.title !== undefined) {
-      dto.title = changes.id3Tag.title;
-    }
-    if (changes.id3Tag.artists !== undefined) {
-      dto.artists = changes.id3Tag.artists;
-    }
-    if (changes.id3Tag.album !== undefined) {
-      dto.album = changes.id3Tag.album;
-    }
-  }
-  return dto;
 };
 
 /**
@@ -192,9 +167,8 @@ export const createAudioFileStore = (
         return okAsync(originalFile);
       }
 
-      // TODO: AudioFilePatchDTOではなくAudioFileChangesを使うようにする
       return updateAudioFileCommand({
-        patch: convertChangesToDTO(changes, id),
+        patch: { id, changes },
       }).map((newFile) => {
         // オリジナルのファイルの状態を更新し、変更内容をクリア
         setState("files", (file) => file.id === newFile.id, reconcile(newFile));
