@@ -170,13 +170,13 @@ impl AudioFile {
         self.with_id3_tag(new_id3_tag)
     }
 
-    /// パッチを適用する
-    pub fn apply_patch(&self, patch: &AudioFileChanges) -> Self {
+    /// 変更を適用する
+    pub fn apply_changes(&self, changes: &AudioFileChanges) -> Self {
         Self {
             id: self.id,
-            path: patch.path.clone().unwrap_or(self.path.clone()),
-            id3_tag: match patch.id3_tag {
-                Some(ref id3_tag_patch) => self.id3_tag.apply_patch(id3_tag_patch),
+            path: changes.path.clone().unwrap_or(self.path.clone()),
+            id3_tag: match changes.id3_tag {
+                Some(ref id3_tag_changes) => self.id3_tag.apply_changes(id3_tag_changes),
                 None => self.id3_tag.clone(),
             },
         }
@@ -258,14 +258,14 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_patch() {
+    fn test_apply_changes() {
         let path = AudioFilePath::new(PathBuf::from("test.mp3")).unwrap();
         let id3_tag = Id3Tag::new(None, None, None);
         let audio_file = AudioFile::new(path, id3_tag);
 
         let new_path = AudioFilePath::new(PathBuf::from("new_test.mp3")).unwrap();
         let new_title = Some(Title::new("New Title").unwrap());
-        let patch = AudioFileChanges {
+        let changes = AudioFileChanges {
             path: Some(new_path.clone()),
             id3_tag: Some(Id3TagChanges {
                 title: Some(new_title.clone()),
@@ -273,23 +273,23 @@ mod tests {
                 album: None,
             }),
         };
-        let modified_audio_file = audio_file.apply_patch(&patch);
+        let modified_audio_file = audio_file.apply_changes(&changes);
 
         assert_eq!(modified_audio_file.path(), &new_path);
         assert_eq!(modified_audio_file.title(), new_title.as_ref());
     }
 
     #[test]
-    fn test_apply_patch_no_changes() {
+    fn test_apply_changes_no_changes() {
         let path = AudioFilePath::new(PathBuf::from("test.mp3")).unwrap();
         let id3_tag = Id3Tag::new(None, None, None);
         let audio_file = AudioFile::new(path, id3_tag);
 
-        let patch = AudioFileChanges {
+        let changes = AudioFileChanges {
             path: None,
             id3_tag: None,
         };
-        let modified_audio_file = audio_file.apply_patch(&patch);
+        let modified_audio_file = audio_file.apply_changes(&changes);
 
         assert_eq!(modified_audio_file.path(), audio_file.path());
         assert_eq!(modified_audio_file.id3_tag, audio_file.id3_tag);
