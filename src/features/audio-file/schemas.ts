@@ -1,4 +1,5 @@
 import { type } from "arktype";
+import deepmerge from "deepmerge";
 
 export const Title = type("string.trim.preformatted > 0").brand("Title");
 export type Title = typeof Title.infer;
@@ -38,3 +39,37 @@ export const AudioFile = type({
   id3Tag: Id3Tag,
 }).brand("AudioFile");
 export type AudioFile = typeof AudioFile.infer;
+
+export interface AudioFileChanges {
+  path?: Path;
+  id3Tag?: {
+    title?: Title | null;
+    album?: Album | null;
+    artists?: Artists | null;
+  };
+}
+
+export interface AudioFilePatch {
+  id: string;
+  changes: AudioFileChanges;
+}
+
+export const applyChanges = (
+  original: AudioFile,
+  changes: AudioFileChanges,
+): AudioFile =>
+  deepmerge<AudioFile, AudioFileChanges>(original, changes, {
+    arrayMerge: (_destinationArray, sourceArray) => sourceArray,
+  });
+
+export const combineChanges = (
+  ...changes: AudioFileChanges[]
+): AudioFileChanges => {
+  return changes.reduce(
+    (acc, change) =>
+      deepmerge<AudioFileChanges>(acc, change, {
+        arrayMerge: (_destinationArray, sourceArray) => sourceArray,
+      }),
+    {} as AudioFileChanges,
+  );
+};
