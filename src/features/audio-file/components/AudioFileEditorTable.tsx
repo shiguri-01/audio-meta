@@ -6,8 +6,7 @@ import {
 } from "@tanstack/solid-table";
 import { For } from "solid-js";
 import { Table } from "@/components/table";
-import { AudioFileEditorProvider } from "../providers/audio-file-editor";
-import { useAudioFilesManager } from "../providers/audio-files-manager-provider";
+import { useAudioFileStore } from "../primitives/audio-file-store";
 import type { AudioFile } from "../schemas";
 import { SaveButton } from "./ActionCell";
 import { AlbumCell, ArtistsCell, PathCell, TitleCell } from "./editable-cell";
@@ -21,37 +20,37 @@ const columns = [
   }),
   columnHelper.accessor("path", {
     header: () => "Path",
-    cell: () => <PathCell />,
+    cell: (info) => <PathCell originalFile={info.row.original} />,
   }),
   columnHelper.accessor("id3Tag.title", {
     header: () => "Title",
-    cell: () => <TitleCell />,
+    cell: (info) => <TitleCell originalFile={info.row.original} />,
   }),
   columnHelper.accessor("id3Tag.artists", {
     header: () => "Artists",
-    cell: () => <ArtistsCell />,
+    cell: (info) => <ArtistsCell originalFile={info.row.original} />,
   }),
   columnHelper.accessor("id3Tag.album", {
     header: () => "Album",
-    cell: () => <AlbumCell />,
+    cell: (info) => <AlbumCell originalFile={info.row.original} />,
   }),
   columnHelper.display({
     id: "actions",
     header: () => "Actions",
-    cell: () => (
+    cell: (info) => (
       <Table.Cell>
-        <SaveButton />
+        <SaveButton file={info.row.original} />
       </Table.Cell>
     ),
   }),
 ];
 
 export const AudioFileEditorTable = () => {
-  const { audioFiles } = useAudioFilesManager();
+  const { originalFiles } = useAudioFileStore();
 
   const table = createSolidTable({
     get data() {
-      return [...audioFiles];
+      return originalFiles();
     },
     columns,
     getRowId: (file) => file.id,
@@ -84,13 +83,11 @@ export const AudioFileEditorTable = () => {
         <For each={table.getRowModel().rows}>
           {(row) => (
             <Table.Row>
-              <AudioFileEditorProvider original={() => row.original}>
-                <For each={row.getVisibleCells()}>
-                  {(cell) =>
-                    flexRender(cell.column.columnDef.cell, cell.getContext())
-                  }
-                </For>
-              </AudioFileEditorProvider>
+              <For each={row.getVisibleCells()}>
+                {(cell) =>
+                  flexRender(cell.column.columnDef.cell, cell.getContext())
+                }
+              </For>
             </Table.Row>
           )}
         </For>

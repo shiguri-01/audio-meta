@@ -5,6 +5,7 @@ import {
   type Accessor,
   batch,
   createEffect,
+  createMemo,
   createSignal,
   For,
   Show,
@@ -12,8 +13,16 @@ import {
 import { Table } from "@/components/table";
 import { Tooltip } from "@/components/tooltip";
 import { cn } from "@/utils/style";
-import { useAudioFileEditor } from "../providers/audio-file-editor";
-import { Album, Artists, Path, Title } from "../schemas";
+import { useAudioFileStore } from "../primitives/audio-file-store";
+import {
+  Album,
+  Artists,
+  type AudioFile,
+  applyChanges,
+  Path,
+  Title,
+} from "../schemas";
+
 export type EditableCellProps<TValue> = {
   value: Accessor<TValue>;
   onCommit: (value: TValue) => void;
@@ -169,8 +178,19 @@ function EditableCell<TValue>(props: EditableCellProps<TValue>) {
   );
 }
 
-export const PathCell = () => {
-  const { path, setPath } = useAudioFileEditor();
+export const PathCell = (props: { originalFile: AudioFile }) => {
+  const { changes, updateFile } = useAudioFileStore();
+  const modifiedFile: Accessor<AudioFile> = createMemo(() => {
+    const change = changes()[props.originalFile.id];
+    return applyChanges(props.originalFile, change ?? {});
+  });
+
+  const path: Accessor<Path> = createMemo(() => {
+    return modifiedFile().path;
+  });
+  const setPath = (value: Path) => {
+    updateFile(props.originalFile.id, { path: value });
+  };
 
   return (
     <EditableCell
@@ -187,8 +207,19 @@ export const PathCell = () => {
   );
 };
 
-export const TitleCell = () => {
-  const { title, setTitle } = useAudioFileEditor();
+export const TitleCell = (props: { originalFile: AudioFile }) => {
+  const { changes, updateFile } = useAudioFileStore();
+  const modifiedFile: Accessor<AudioFile> = createMemo(() => {
+    const change = changes()[props.originalFile.id];
+    return applyChanges(props.originalFile, change ?? {});
+  });
+
+  const title: Accessor<Title | null> = createMemo(() => {
+    return modifiedFile().id3Tag.title;
+  });
+  const setTitle = (value: Title | null) => {
+    updateFile(props.originalFile.id, { id3Tag: { title: value } });
+  };
 
   return (
     <EditableCell
@@ -207,8 +238,19 @@ export const TitleCell = () => {
   );
 };
 
-export const ArtistsCell = () => {
-  const { artists, setArtists } = useAudioFileEditor();
+export const ArtistsCell = (props: { originalFile: AudioFile }) => {
+  const { changes, updateFile } = useAudioFileStore();
+  const modifiedFile: Accessor<AudioFile> = createMemo(() => {
+    const change = changes()[props.originalFile.id];
+    return applyChanges(props.originalFile, change ?? {});
+  });
+
+  const artists: Accessor<Artists | null> = createMemo(() => {
+    return modifiedFile().id3Tag.artists;
+  });
+  const setArtists = (value: Artists | null) => {
+    updateFile(props.originalFile.id, { id3Tag: { artists: value } });
+  };
 
   return (
     <EditableCell
@@ -232,8 +274,19 @@ export const ArtistsCell = () => {
   );
 };
 
-export const AlbumCell = () => {
-  const { album, setAlbum } = useAudioFileEditor();
+export const AlbumCell = (props: { originalFile: AudioFile }) => {
+  const { changes, updateFile } = useAudioFileStore();
+  const modifiedFile: Accessor<AudioFile> = createMemo(() => {
+    const change = changes()[props.originalFile.id];
+    return applyChanges(props.originalFile, change ?? {});
+  });
+
+  const album: Accessor<Album | null> = createMemo(() => {
+    return modifiedFile().id3Tag.album;
+  });
+  const setAlbum = (value: Album | null) => {
+    updateFile(props.originalFile.id, { id3Tag: { album: value } });
+  };
 
   return (
     <EditableCell

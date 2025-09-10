@@ -1,8 +1,8 @@
 import { Show } from "solid-js";
 import { Button } from "@/components/button";
 import { useCommands } from "@/tauri/commands";
+import { useAudioFileStore } from "../primitives/audio-file-store";
 import { createDirectoryScanner } from "../primitives/directory-scanner";
-import { useAudioFilesManager } from "../providers/audio-files-manager-provider";
 
 export const DirectorySelector = () => {
   const commands = useCommands();
@@ -10,7 +10,7 @@ export const DirectorySelector = () => {
     selectDirectoryCommand: commands.selectDirectory,
     scanDirectoryCommand: commands.scanDirectory,
   });
-  const { replaceAllAudioFiles } = useAudioFilesManager();
+  const { resetWithFiles } = useAudioFileStore();
 
   const loadDirectory = () => {
     if (scanner.isLoading()) return;
@@ -18,7 +18,7 @@ export const DirectorySelector = () => {
     scanner
       .selectAndScanDirectory()
       .map((files) => {
-        replaceAllAudioFiles(files);
+        resetWithFiles(files);
       })
       .mapErr((error) => {
         console.error("Error loading directory:", error);

@@ -1,21 +1,19 @@
 import { SaveIcon } from "lucide-solid";
+import { createMemo } from "solid-js";
 import { IconButton } from "@/components/button";
 import { Tooltip } from "@/components/tooltip";
-import { useAudioFileEditor } from "../providers/audio-file-editor";
-import { useAudioFilesManager } from "../providers/audio-files-manager-provider";
+import { useAudioFileStore } from "../primitives/audio-file-store";
+import type { AudioFile } from "../schemas";
 
-export const SaveButton = () => {
-  const { getPatch } = useAudioFileEditor();
-  const { updateAudioFile, isUpdating } = useAudioFilesManager();
+export const SaveButton = (props: { file: AudioFile }) => {
+  const { isFileDirty, saveFile, pending } = useAudioFileStore();
+  const isDirty = createMemo(() => isFileDirty(props.file.id));
 
   let buttonRef!: HTMLButtonElement;
 
   const handleSave = () => {
-    if (isUpdating()) return;
-
-    const patch = getPatch();
-    if (!patch) return;
-    updateAudioFile(patch);
+    if (pending() || !isDirty()) return;
+    saveFile(props.file.id);
   };
 
   return (
@@ -23,7 +21,7 @@ export const SaveButton = () => {
       <IconButton
         ref={buttonRef}
         onClick={handleSave}
-        disabled={getPatch() === null || isUpdating()}
+        disabled={!isDirty() || pending()}
         icon={SaveIcon}
         aria-label="保存"
         variant={"tertiary"}
