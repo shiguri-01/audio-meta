@@ -44,14 +44,14 @@ impl AudioFilePatch {
             .path
             .map(|p| AudioFilePath::new(PathBuf::from(p)))
             .transpose()?;
-        let id3_tag = dto.id3_tag.map(id3::Id3TagPatch::from).transpose()?;
+        let id3_tag = dto.id3_tag.map(id3::Id3TagChanges::from).transpose()?;
 
         Ok(AudioFilePatch { path, id3_tag })
     }
 }
 
-impl id3::Id3TagPatch {
-    fn from(dto: Id3TagChangesDTO) -> Result<id3::Id3TagPatch, ValidationError> {
+impl id3::Id3TagChanges {
+    fn from(dto: Id3TagChangesDTO) -> Result<id3::Id3TagChanges, ValidationError> {
         let title = dto
             .title
             .map(|nullable| nullable.map(|t| id3::Title::new(t.as_str())).transpose())
@@ -72,7 +72,7 @@ impl id3::Id3TagPatch {
             .map(|nullable| nullable.map(|a| id3::Album::new(a.as_str())).transpose())
             .transpose()?;
 
-        Ok(id3::Id3TagPatch {
+        Ok(id3::Id3TagChanges {
             title,
             artists,
             album,

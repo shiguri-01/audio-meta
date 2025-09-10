@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::id3::{Album, Artists, Id3Tag, Id3TagPatch, Title};
+use crate::domain::id3::{Album, Artists, Id3Tag, Id3TagChanges, Title};
 use crate::utils::error::{AudioFileError, ValidationError};
 
 // 同じモジュール内のため、相対パスで参照
@@ -190,7 +190,7 @@ impl AudioFile {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AudioFilePatch {
     pub path: Option<AudioFilePath>,
-    pub id3_tag: Option<Id3TagPatch>,
+    pub id3_tag: Option<Id3TagChanges>,
 }
 
 #[cfg(test)]
@@ -267,7 +267,7 @@ mod tests {
         let new_title = Some(Title::new("New Title").unwrap());
         let patch = AudioFilePatch {
             path: Some(new_path.clone()),
-            id3_tag: Some(Id3TagPatch {
+            id3_tag: Some(Id3TagChanges {
                 title: Some(new_title.clone()),
                 artists: None,
                 album: None,

@@ -56,7 +56,7 @@ impl Id3Tag {
     }
 
     /// パッチを適用する
-    pub fn apply_patch(&self, patch: &Id3TagPatch) -> Self {
+    pub fn apply_patch(&self, patch: &Id3TagChanges) -> Self {
         Id3Tag {
             title: patch.title.clone().unwrap_or(self.title.clone()),
             artists: patch.artists.clone().unwrap_or(self.artists.clone()),
@@ -65,13 +65,13 @@ impl Id3Tag {
     }
 }
 
-/// ID3タグの更新用パッチ
+/// ID3タグの変更点
 ///
 /// * `Some(Some(value))` - 値を更新
 /// * `Some(None)` - 値を削除
 /// * `None` - 変更なし
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Id3TagPatch {
+pub struct Id3TagChanges {
     pub title: Option<Option<Title>>,
     pub artists: Option<Option<Artists>>,
     pub album: Option<Option<Album>>,
@@ -200,7 +200,7 @@ mod tests {
             album: Some(Album::new("Original Album").unwrap()),
         };
 
-        let patch = Id3TagPatch {
+        let patch = Id3TagChanges {
             title: Some(Some(Title::new("Updated Title").unwrap())),
             artists: Some(Some(
                 Artists::new(vec![Artist::new("Updated Artist").unwrap()]).unwrap(),
@@ -226,7 +226,7 @@ mod tests {
             album: Some(Album::new("Original Album").unwrap()),
         };
 
-        let patch = Id3TagPatch {
+        let patch = Id3TagChanges {
             title: Some(None),
             artists: Some(None),
             album: Some(None),
@@ -247,7 +247,7 @@ mod tests {
             album: Some(Album::new("Original Album").unwrap()),
         };
 
-        let patch = Id3TagPatch {
+        let patch = Id3TagChanges {
             title: None,
             artists: None,
             album: None,
