@@ -1,8 +1,10 @@
 import { errAsync, okAsync } from "neverthrow";
-import { type AudioFileDTO, audioFileFromDTO } from "../dto";
-import type { Commands } from "./types";
+import type { AudioFile, AudioFilePatch } from "@/features/audio-file/schemas";
+import { applyChanges } from "@/features/audio-file/schemas";
+import type { Commands, UpdateAudioFile } from "./types";
+import { parseAudioFile } from "./utils";
 
-const mockAudioFiles: AudioFileDTO[] = [
+const seed = [
   {
     id: "1",
     path: "C:\\Mock\\Music\\song1.mp3",
@@ -23,6 +25,26 @@ const mockAudioFiles: AudioFileDTO[] = [
   },
 ];
 
+const mockAudioFiles: AudioFile[] = seed
+  .map(parseAudioFile)
+  .filter((result) => result.isOk())
+  .map((result) => result._unsafeUnwrap());
+
+const applyPatch = (patch: AudioFilePatch) => {
+  const idx = mockAudioFiles.findIndex((file) => file.id === patch.id);
+  if (idx === -1) return errAsync("File not found");
+  const updatedCandidate = applyChanges(mockAudioFiles[idx], patch.changes);
+  const validated = parseAudioFile(updatedCandidate);
+  if (validated.isErr()) {
+    const first = validated.error[0] ?? "Unknown error";
+    return errAsync(first);
+  }
+  mockAudioFiles[idx] = validated.value;
+  return okAsync(validated.value);
+};
+
+const updateAudioFile: UpdateAudioFile = ({ patch }) => applyPatch(patch);
+
 export const mockCommands: Commands = {
   selectDirectory: () => {
     console.log("Mock: Selecting directory");
@@ -31,36 +53,8 @@ export const mockCommands: Commands = {
 
   scanDirectory: ({ dir }) => {
     console.log(`Mock: Scanning directory ${dir}`);
-    return okAsync(
-      mockAudioFiles
-        .map(audioFileFromDTO)
-        .filter((file) => file.isOk())
-        .map((file) => file.value),
-    );
+    return okAsync([...mockAudioFiles]);
   },
 
-  updateAudioFile: ({ patch }) => {
-    console.log(`Mock: Updating audio file ${patch.id}`, patch);
-    const existingFile = mockAudioFiles.find((f) => f.id === patch.id);
-    if (!existingFile) {
-      return errAsync("File not found");
-    }
-
-    const result = audioFileFromDTO({
-      ...existingFile,
-      path: patch.path ?? existingFile.path,
-      id3Tag: {
-        title: patch.title ?? existingFile.id3Tag.title,
-        artists: patch.artists ?? existingFile.id3Tag.artists,
-        album: patch.album ?? existingFile.id3Tag.album,
-      },
-    });
-
-    if (result.isErr()) {
-      const firstError =
-        result.error.length > 0 ? result.error[0] : "Unknown error";
-      return errAsync(firstError);
-    }
-    return okAsync(result.value);
-  },
+  updateAudioFile,
 };
