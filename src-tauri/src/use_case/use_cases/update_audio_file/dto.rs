@@ -9,12 +9,8 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct AudioFilePatchDTO {
-    pub id: Uuid,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub path: Option<String>,
-
+#[serde(rename_all = "camelCase")]
+pub struct Id3TagChangesDTO {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<Option<String>>,
 
@@ -25,12 +21,37 @@ pub struct AudioFilePatchDTO {
     pub album: Option<Option<String>>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioFileChangesDTO {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id3_tag: Option<Id3TagChangesDTO>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioFilePatchDTO {
+    pub id: Uuid,
+    pub changes: AudioFileChangesDTO,
+}
+
 impl AudioFilePatch {
-    pub fn from(dto: AudioFilePatchDTO) -> Result<AudioFilePatch, ValidationError> {
+    pub fn from(dto: AudioFileChangesDTO) -> Result<AudioFilePatch, ValidationError> {
         let path = dto
             .path
             .map(|p| AudioFilePath::new(PathBuf::from(p)))
             .transpose()?;
+        let id3_tag = dto.id3_tag.map(id3::Id3TagPatch::from).transpose()?;
+
+        Ok(AudioFilePatch { path, id3_tag })
+    }
+}
+
+impl id3::Id3TagPatch {
+    fn from(dto: Id3TagChangesDTO) -> Result<id3::Id3TagPatch, ValidationError> {
         let title = dto
             .title
             .map(|nullable| nullable.map(|t| id3::Title::new(t.as_str())).transpose())
@@ -51,13 +72,10 @@ impl AudioFilePatch {
             .map(|nullable| nullable.map(|a| id3::Album::new(a.as_str())).transpose())
             .transpose()?;
 
-        Ok(AudioFilePatch {
-            path,
-            id3_tag: Some(id3::Id3TagPatch {
-                title,
-                artists,
-                album,
-            }),
+        Ok(id3::Id3TagPatch {
+            title,
+            artists,
+            album,
         })
     }
 }

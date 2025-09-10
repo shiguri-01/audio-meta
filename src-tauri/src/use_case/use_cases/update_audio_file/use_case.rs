@@ -27,7 +27,7 @@ impl<'a> UpdateAudioFileUseCase<'a> {
             },
         )?;
 
-        let patch = AudioFilePatch::from(patch_dto)?;
+        let patch = AudioFilePatch::from(patch_dto.changes)?;
         let updated_audio_file = audio_file.apply_patch(&patch);
 
         self.repository.save(&updated_audio_file).await?;
@@ -53,13 +53,16 @@ mod tests {
 
         // 存在しないIDのパッチDTO
         let non_existent_id = Uuid::new_v4();
-        let patch_dto = AudioFilePatchDTO {
-            id: non_existent_id,
-            path: None,
-            title: Some(Some("New Title".to_string())),
-            artists: None,
-            album: None,
-        };
+        let patch_dto_json = serde_json::json!({
+            "id": non_existent_id,
+            "changes": {
+                "id3Tag": {
+                    "title": "New Title"
+                }
+            }
+        });
+        let patch_dto: AudioFilePatchDTO =
+            serde_json::from_value(patch_dto_json).expect("failed to build patch dto json");
 
         let result = use_case.execute(patch_dto).await;
 
@@ -84,13 +87,18 @@ mod tests {
         let mut use_case = UpdateAudioFileUseCase::new(&mut repo);
 
         // 更新用のパッチDTO
-        let patch_dto = AudioFilePatchDTO {
-            id: file_id,
-            path: None,
-            title: Some(Some("Updated Title".to_string())),
-            artists: Some(Some(vec!["Updated Artist".to_string()])),
-            album: Some(Some("Updated Album".to_string())),
-        };
+        let patch_dto_json = serde_json::json!({
+            "id": file_id,
+            "changes": {
+                "id3Tag": {
+                    "title": "Updated Title",
+                    "artists": ["Updated Artist"],
+                    "album": "Updated Album"
+                }
+            }
+        });
+        let patch_dto: AudioFilePatchDTO =
+            serde_json::from_value(patch_dto_json).expect("failed to build patch dto json");
 
         let result = use_case.execute(patch_dto).await;
 
