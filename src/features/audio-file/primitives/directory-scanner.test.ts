@@ -177,7 +177,7 @@ describe("createDirectoryScanner", () => {
     it("空のディレクトリでもスキャンが成功する", async () => {
       // Given
       const mockDirectory = "C:\\Music\\Empty";
-      const mockFiles: AudioFileSchema[] = [];
+      const mockFiles: AudioFile[] = [];
       const mockCommands = createMockCommands();
       mockCommands.selectDirectoryCommand.mockReturnValue(
         okAsync(mockDirectory),
