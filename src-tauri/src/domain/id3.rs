@@ -55,23 +55,23 @@ impl Id3Tag {
         new_tag
     }
 
-    /// パッチを適用する
-    pub fn apply_patch(&self, patch: &Id3TagPatch) -> Self {
+    /// 変更を適用する
+    pub fn apply_changes(&self, changes: &Id3TagChanges) -> Self {
         Id3Tag {
-            title: patch.title.clone().unwrap_or(self.title.clone()),
-            artists: patch.artists.clone().unwrap_or(self.artists.clone()),
-            album: patch.album.clone().unwrap_or(self.album.clone()),
+            title: changes.title.clone().unwrap_or(self.title.clone()),
+            artists: changes.artists.clone().unwrap_or(self.artists.clone()),
+            album: changes.album.clone().unwrap_or(self.album.clone()),
         }
     }
 }
 
-/// ID3タグの更新用パッチ
+/// ID3タグの変更点
 ///
 /// * `Some(Some(value))` - 値を更新
 /// * `Some(None)` - 値を削除
 /// * `None` - 変更なし
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Id3TagPatch {
+pub struct Id3TagChanges {
     pub title: Option<Option<Title>>,
     pub artists: Option<Option<Artists>>,
     pub album: Option<Option<Album>>,
@@ -193,14 +193,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_apply_patch() {
+    fn test_apply_changes() {
         let original = Id3Tag {
             title: Some(Title::new("Original Title").unwrap()),
             artists: Some(Artists::new(vec![Artist::new("Original Artist").unwrap()]).unwrap()),
             album: Some(Album::new("Original Album").unwrap()),
         };
 
-        let patch = Id3TagPatch {
+        let changes = Id3TagChanges {
             title: Some(Some(Title::new("Updated Title").unwrap())),
             artists: Some(Some(
                 Artists::new(vec![Artist::new("Updated Artist").unwrap()]).unwrap(),
@@ -208,7 +208,7 @@ mod tests {
             album: Some(Some(Album::new("Updated Album").unwrap())),
         };
 
-        let updated = original.apply_patch(&patch);
+        let updated = original.apply_changes(&changes);
 
         assert_eq!(updated.title(), Some(&Title::new("Updated Title").unwrap()));
         assert_eq!(
@@ -219,20 +219,20 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_patch_deletion() {
+    fn test_apply_changes_deletion() {
         let original = Id3Tag {
             title: Some(Title::new("Original Title").unwrap()),
             artists: Some(Artists::new(vec![Artist::new("Original Artist").unwrap()]).unwrap()),
             album: Some(Album::new("Original Album").unwrap()),
         };
 
-        let patch = Id3TagPatch {
+        let changes = Id3TagChanges {
             title: Some(None),
             artists: Some(None),
             album: Some(None),
         };
 
-        let updated = original.apply_patch(&patch);
+        let updated = original.apply_changes(&changes);
 
         assert_eq!(updated.title(), None);
         assert_eq!(updated.artists(), None);
@@ -240,20 +240,20 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_patch_no_changes() {
+    fn test_apply_changes_no_changes() {
         let original = Id3Tag {
             title: Some(Title::new("Original Title").unwrap()),
             artists: Some(Artists::new(vec![Artist::new("Original Artist").unwrap()]).unwrap()),
             album: Some(Album::new("Original Album").unwrap()),
         };
 
-        let patch = Id3TagPatch {
+        let changes = Id3TagChanges {
             title: None,
             artists: None,
             album: None,
         };
 
-        let updated = original.apply_patch(&patch);
+        let updated = original.apply_changes(&changes);
 
         assert_eq!(
             updated.title(),
