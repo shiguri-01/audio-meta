@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::domain::audio_file::AudioFile;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Id3TagDTO {
     pub title: Option<String>,
     pub artists: Option<Vec<String>>,
@@ -11,6 +12,7 @@ pub struct Id3TagDTO {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AudioFileDTO {
     pub id: Uuid,
     pub path: String,

@@ -12,7 +12,7 @@ export interface Id3TagDTO {
 export interface AudioFileDTO {
   id: string;
   path: string;
-  id3_tag: Id3TagDTO;
+  id3Tag: Id3TagDTO;
 }
 
 export interface AudioFilePatchDTO {
@@ -23,20 +23,11 @@ export interface AudioFilePatchDTO {
   album?: string | null;
 }
 
-export const audioFileToDTO: toDTO<AudioFile, AudioFileDTO> = (audioFile) => {
-  return {
-    id: audioFile.id,
-    path: audioFile.path,
-    id3_tag: audioFile.id3Tag,
-  };
-};
+export const audioFileToDTO: toDTO<AudioFile, AudioFileDTO> = (audioFile) =>
+  audioFile;
 
 export const audioFileFromDTO: fromDTO<AudioFile, AudioFileDTO> = (dto) => {
-  const out = AudioFile({
-    id: dto.id,
-    path: dto.path,
-    id3Tag: dto.id3_tag,
-  });
+  const out = AudioFile(dto);
 
   if (out instanceof type.errors) {
     return err(out.map((e) => e.message));

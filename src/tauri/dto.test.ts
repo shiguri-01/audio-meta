@@ -9,7 +9,7 @@ describe("audioFileFromDTO", () => {
       const dto: AudioFileDTO = {
         id: "test-id-123",
         path: "/path/to/music/song.mp3",
-        id3_tag: {
+        id3Tag: {
           title: "Test Song",
           artists: ["Artist 1", "Artist 2"],
           album: "Test Album",
@@ -36,7 +36,7 @@ describe("audioFileFromDTO", () => {
       const dto: AudioFileDTO = {
         id: "test-id-456",
         path: "/path/to/music/instrumental.mp3",
-        id3_tag: {
+        id3Tag: {
           title: null,
           artists: null,
           album: null,
@@ -63,7 +63,7 @@ describe("audioFileFromDTO", () => {
       const dto: AudioFileDTO = {
         id: "test-id-789",
         path: "/path/to/music/partial.mp3",
-        id3_tag: {
+        id3Tag: {
           title: "Song with Missing Info",
           artists: ["Known Artist"],
           album: null,
@@ -90,7 +90,7 @@ describe("audioFileFromDTO", () => {
       const dto: AudioFileDTO = {
         id: "test-id",
         path: "",
-        id3_tag: {
+        id3Tag: {
           title: "Test",
           artists: ["Artist"],
           album: "Album",
@@ -113,7 +113,7 @@ describe("audioFileFromDTO", () => {
       const dto: AudioFileDTO = {
         id: "test-id",
         path: "/valid/path.mp3",
-        id3_tag: {
+        id3Tag: {
           title: "",
           artists: ["Artist"],
           album: "Album",
@@ -136,7 +136,7 @@ describe("audioFileFromDTO", () => {
       const dto: AudioFileDTO = {
         id: "test-id",
         path: "/valid/path.mp3",
-        id3_tag: {
+        id3Tag: {
           title: "Valid Title",
           artists: [],
           album: "Album",
@@ -159,7 +159,7 @@ describe("audioFileFromDTO", () => {
       const dto: AudioFileDTO = {
         id: "test-id",
         path: "/valid/path.mp3",
-        id3_tag: {
+        id3Tag: {
           title: "Valid Title",
           artists: ["Artist 1", "Artist 1"],
           album: "Album",
@@ -186,7 +186,7 @@ describe("audioFileFromDTO", () => {
       const dto: AudioFileDTO = {
         id: "test-id",
         path: "/valid/path.mp3",
-        id3_tag: {
+        id3Tag: {
           title: "Valid Title",
           artists: ["Artist"],
           album: "",
@@ -211,7 +211,7 @@ describe("audioFileFromDTO", () => {
       const dto: AudioFileDTO = {
         id: "test-id",
         path: "",
-        id3_tag: {
+        id3Tag: {
           title: "",
           artists: [],
           album: "",
@@ -266,7 +266,7 @@ describe("audioFileToDTO", () => {
     const validDto: AudioFileDTO = {
       id: "test-id",
       path: "/path/to/song.mp3",
-      id3_tag: {
+      id3Tag: {
         title: "Test Song",
         artists: ["Test Artist"],
         album: "Test Album",
@@ -290,7 +290,7 @@ describe("audioFileToDTO", () => {
     const validDto: AudioFileDTO = {
       id: "test-id",
       path: "/path/to/instrumental.mp3",
-      id3_tag: {
+      id3Tag: {
         title: null,
         artists: null,
         album: null,

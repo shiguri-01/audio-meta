@@ -6,7 +6,7 @@ const mockAudioFiles: AudioFileDTO[] = [
   {
     id: "1",
     path: "C:\\Mock\\Music\\song1.mp3",
-    id3_tag: {
+    id3Tag: {
       title: "Test Song 1",
       artists: ["Test Artist"],
       album: "Test Album",
@@ -15,7 +15,7 @@ const mockAudioFiles: AudioFileDTO[] = [
   {
     id: "2",
     path: "C:\\Mock\\Music\\song2.mp3",
-    id3_tag: {
+    id3Tag: {
       title: "Test Song 2",
       artists: ["Another Artist"],
       album: "Another Album",
@@ -49,10 +49,10 @@ export const mockCommands: Commands = {
     const result = audioFileFromDTO({
       ...existingFile,
       path: patch.path ?? existingFile.path,
-      id3_tag: {
-        title: patch.title ?? existingFile.id3_tag.title,
-        artists: patch.artists ?? existingFile.id3_tag.artists,
-        album: patch.album ?? existingFile.id3_tag.album,
+      id3Tag: {
+        title: patch.title ?? existingFile.id3Tag.title,
+        artists: patch.artists ?? existingFile.id3Tag.artists,
+        album: patch.album ?? existingFile.id3Tag.album,
       },
     });
 
