@@ -74,6 +74,20 @@ interface AudioFilesState {
   changes: Record<string, AudioFileChanges>;
 }
 
+const hasEffectiveChanges = (
+  changes: AudioFileChanges | undefined,
+): boolean => {
+  if (!changes) return false;
+  if (typeof changes.path !== "undefined") return true;
+  const tag = changes.id3Tag;
+  return !!(
+    tag &&
+    (typeof tag.title !== "undefined" ||
+      typeof tag.artists !== "undefined" ||
+      typeof tag.album !== "undefined")
+  );
+};
+
 // 一時的な変換関数
 // TODO: AudioFilePatchDTOではなくAudioFileChangesを使うようにする
 const convertChangesToDTO = (
@@ -133,10 +147,10 @@ export const createAudioFileStore = (
     changes: {},
   });
 
-  const isDirty = () => Object.keys(state.changes).length > 0;
+  const isDirty = () => Object.values(state.changes).some(hasEffectiveChanges);
 
   const isFileDirty = (id: string): boolean =>
-    Object.keys(state.changes[id] ?? {}).length > 0;
+    hasEffectiveChanges(state.changes[id]);
 
   const pendingSignal = createSignal<boolean>(false);
   const [pending, setPending] = pendingSignal;
@@ -146,13 +160,23 @@ export const createAudioFileStore = (
     updater: AudioFileChanges | ((prev: AudioFileChanges) => AudioFileChanges),
   ) => {
     // TODO: 実質的に変更がない場合、changesの項目を消去する（ファイル単位・1つのプロパティ単位）
-    if (typeof updater === "function") {
-      // 関数の場合：既存の変更内容を受け取って新しい変更内容を計算し、置き換える
-      setState("changes", id, (prev) => updater(prev ?? {}));
-    } else {
-      // オブジェクトの場合：既存の変更内容と新しい変更内容をマージする
-      const newChanges = combineChanges(state.changes[id] ?? {}, updater);
+    const prevChanges = state.changes[id] ?? {};
+    const newChanges =
+      typeof updater === "function"
+        ? // 関数の場合：既存の変更内容を受け取って新しい変更内容を計算し、置き換える
+          updater(prevChanges)
+        : // オブジェクトの場合：既存の変更内容と新しい変更内容をマージする
+          combineChanges(prevChanges, updater);
+
+    if (hasEffectiveChanges(newChanges)) {
       setState("changes", id, reconcile(newChanges));
+    } else {
+      setState(
+        "changes",
+        produce((prev) => {
+          delete prev[id];
+        }),
+      );
     }
   };
 
@@ -164,7 +188,7 @@ export const createAudioFileStore = (
       }
 
       const changes = state.changes[id];
-      if (!changes) {
+      if (!changes || !hasEffectiveChanges(changes)) {
         return okAsync(originalFile);
       }
 
