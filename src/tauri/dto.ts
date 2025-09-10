@@ -15,14 +15,6 @@ export interface AudioFileDTO {
   id3Tag: Id3TagDTO;
 }
 
-export interface AudioFilePatchDTO {
-  id: string;
-  path?: string;
-  title?: string | null;
-  artists?: string[] | null;
-  album?: string | null;
-}
-
 export const audioFileToDTO: toDTO<AudioFile, AudioFileDTO> = (audioFile) =>
   audioFile;
 
