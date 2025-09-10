@@ -70,6 +70,6 @@ export const combineChanges = (
       deepmerge<AudioFileChanges>(acc, change, {
         arrayMerge: (_destinationArray, sourceArray) => sourceArray,
       }),
-    {},
+    {} as AudioFileChanges,
   );
 };
