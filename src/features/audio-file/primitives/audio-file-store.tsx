@@ -101,7 +101,7 @@ const convertChangesToDTO = (
 /**
  * pending状態の管理を伴う非同期処理をおこなう関数を作成する
  */
-const withPendingState = <T,>(
+export const withPendingState = <T,>(
   operation: () => ResultAsync<T, string>,
   pendingSignal: [Accessor<boolean>, Setter<boolean>],
 ): ResultAsync<T, string> => {
@@ -124,7 +124,7 @@ const withPendingState = <T,>(
     });
 };
 
-const createAudioFileStore = (
+export const createAudioFileStore = (
   initialAudioFiles: AudioFile[],
   { updateAudioFileCommand }: AudioFileStoreConfig,
 ): AudioFileStore => {
