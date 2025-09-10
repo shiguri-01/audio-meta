@@ -1,23 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { type } from "arktype";
-import { err, fromPromise, ok, Result } from "neverthrow";
-import type { AudioFile } from "@/features/audio-file";
-import { AudioFile as AudioFileSchema } from "@/features/audio-file";
+import { fromPromise, Result } from "neverthrow";
 import type {
   Commands,
   ScanDirectory,
   SelectDirectory,
   UpdateAudioFile,
 } from "./types";
-
-const parseAudioFile = (raw: unknown): Result<AudioFile, string[]> => {
-  const out = AudioFileSchema(raw);
-  if (out instanceof type.errors) {
-    return err(out.map((e) => e.message));
-  }
-  return ok(out);
-};
+import { parseAudioFile } from "./utils";
 
 const selectDirectory: SelectDirectory = () => {
   return fromPromise(open({ multiple: false, directory: true }), (e) =>
