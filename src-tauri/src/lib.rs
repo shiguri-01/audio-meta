@@ -15,6 +15,7 @@ use crate::{
         dto::AudioFileDTO,
         error::ApplicationError,
         scan_directory::ScanDirectoryUseCase,
+        update_audio_file::AudioFileSaveResultDTO,
         update_audio_file::{AudioFilePatchDTO, UpdateAudioFileUseCase},
     },
 };
@@ -42,7 +43,11 @@ pub fn run() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![update_audio_file, scan_directory])
+        .invoke_handler(tauri::generate_handler![
+            update_audio_file,
+            update_audio_files,
+            scan_directory
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -59,6 +64,37 @@ async fn update_audio_file(
         .execute(patch)
         .await
         .map(|audio_file| AudioFileDTO::from(&audio_file))
+}
+
+// TODO: 並列化する
+#[tauri::command]
+async fn update_audio_files(
+    state: tauri::State<'_, AppState>,
+    patches: Vec<AudioFilePatchDTO>,
+) -> Result<Vec<AudioFileSaveResultDTO>, String> {
+    let mut repository = state.audio_file_repository.lock().await;
+
+    let mut results = Vec::with_capacity(patches.len());
+    for patch in patches.into_iter() {
+        let id = patch.id;
+        let mut use_case = UpdateAudioFileUseCase::new(&mut repository);
+        match use_case.execute(patch).await {
+            Ok(audio_file) => {
+                results.push(AudioFileSaveResultDTO::Ok {
+                    id,
+                    file: AudioFileDTO::from(&audio_file),
+                });
+            }
+            Err(e) => {
+                results.push(AudioFileSaveResultDTO::Err {
+                    id,
+                    error: e.to_string(),
+                });
+            }
+        }
+    }
+
+    Ok(results)
 }
 
 #[tauri::command]
