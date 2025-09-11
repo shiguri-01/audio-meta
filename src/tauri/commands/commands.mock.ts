@@ -1,7 +1,7 @@
-import { errAsync, okAsync } from "neverthrow";
+import { err, errAsync, ok, okAsync, type Result } from "neverthrow";
 import type { AudioFile, AudioFilePatch } from "@/features/audio-file/schemas";
 import { applyChanges } from "@/features/audio-file/schemas";
-import type { Commands, UpdateAudioFile } from "./types";
+import type { Commands, UpdateAudioFile, UpdateAudioFiles } from "./types";
 import { parseAudioFile } from "./utils";
 
 const seed = [
@@ -45,6 +45,24 @@ const applyPatch = (patch: AudioFilePatch) => {
 
 const updateAudioFile: UpdateAudioFile = ({ patch }) => applyPatch(patch);
 
+const updateAudioFiles: UpdateAudioFiles = ({ patches }) => {
+  const results: Result<AudioFile, { id: string; error: string }>[] =
+    patches.map((patch) => {
+      const idx = mockAudioFiles.findIndex((file) => file.id === patch.id);
+      if (idx === -1) return err({ id: patch.id, error: "File not found" });
+
+      const updatedCandidate = applyChanges(mockAudioFiles[idx], patch.changes);
+      const validated = parseAudioFile(updatedCandidate);
+      if (validated.isErr()) {
+        const first = validated.error[0] ?? "Unknown error";
+        return err({ id: patch.id, error: first });
+      }
+      mockAudioFiles[idx] = validated.value;
+      return ok(validated.value);
+    });
+  return okAsync(results);
+};
+
 export const mockCommands: Commands = {
   selectDirectory: () => {
     console.log("Mock: Selecting directory");
@@ -57,4 +75,5 @@ export const mockCommands: Commands = {
   },
 
   updateAudioFile,
+  updateAudioFiles,
 };

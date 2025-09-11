@@ -1,4 +1,4 @@
-import type { ResultAsync } from "neverthrow";
+import type { Result, ResultAsync } from "neverthrow";
 import type { AudioFile, AudioFilePatch } from "@/features/audio-file/schemas";
 
 type CommandArgs = Record<string, unknown> | undefined;
@@ -13,8 +13,14 @@ export type ScanDirectory = Command<{ dir: string }, AudioFile[]>;
 
 export type UpdateAudioFile = Command<{ patch: AudioFilePatch }, AudioFile>;
 
+export type UpdateAudioFiles = Command<
+  { patches: AudioFilePatch[] },
+  Result<AudioFile, { id: string; error: string }>[]
+>;
+
 export interface Commands {
   selectDirectory: SelectDirectory;
   scanDirectory: ScanDirectory;
   updateAudioFile: UpdateAudioFile;
+  updateAudioFiles: UpdateAudioFiles;
 }
