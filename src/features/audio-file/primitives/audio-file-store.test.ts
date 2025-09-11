@@ -22,6 +22,7 @@ const buildAudioFile = (
   }) as unknown as AudioFile;
 
 const createMockUpdateCommand = () => vi.fn();
+const createMockUpdateMultipleCommand = () => vi.fn();
 
 describe("createAudioFileStore", () => {
   beforeEach(() => {
@@ -32,6 +33,7 @@ describe("createAudioFileStore", () => {
     it("初期化時に空の状態で作成される", () => {
       const store = createAudioFileStore([], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       expect(store.originalFiles()).toEqual([]);
       expect(store.isDirty()).toBe(false);
@@ -44,6 +46,7 @@ describe("createAudioFileStore", () => {
       const f1 = buildAudioFile("1", "Old Title", "Old Album");
       const store = createAudioFileStore([f1], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
 
       store.updateFile("1", {
@@ -58,6 +61,7 @@ describe("createAudioFileStore", () => {
       const f1 = buildAudioFile("1", "T", "A");
       const store = createAudioFileStore([f1], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
 
       store.updateFile("1", { id3Tag: { title: null } });
@@ -76,6 +80,7 @@ describe("createAudioFileStore", () => {
       const f = buildAudioFile("1");
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       store.updateFile("1", () => ({ id3Tag: { title: null } }));
       expect(store.changes()["1"].id3Tag?.title).toBeNull();
@@ -85,6 +90,7 @@ describe("createAudioFileStore", () => {
       const f = buildAudioFile("1");
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       store.updateFile("1", { id3Tag: { title: null, album: null } });
       store.updateFile("1", (prev) => {
@@ -102,6 +108,7 @@ describe("createAudioFileStore", () => {
       const f = buildAudioFile("1");
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       expect(store.isDirty()).toBe(false);
       expect(store.isFileDirty("1")).toBe(false);
@@ -119,6 +126,7 @@ describe("createAudioFileStore", () => {
       const updateFn = vi.fn().mockReturnValue(okAsync(updatedFile));
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: updateFn,
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
 
       store.updateFile("1", { id3Tag: { title: "New" as unknown as Title } });
@@ -138,6 +146,7 @@ describe("createAudioFileStore", () => {
       const updateFn = vi.fn();
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: updateFn,
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       const result = await store.saveFile("1");
       expect(result.isOk()).toBe(true);
@@ -147,7 +156,8 @@ describe("createAudioFileStore", () => {
 
     it("存在しないIDをsaveFileするとエラーを返す", async () => {
       const store = createAudioFileStore([], {
-        updateAudioFileCommand: vi.fn(),
+        updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       const result = await store.saveFile("x");
       expect(result.isErr()).toBe(true);
@@ -159,6 +169,7 @@ describe("createAudioFileStore", () => {
       const updateFn = vi.fn().mockReturnValue(errAsync("API Error"));
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: updateFn,
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       store.updateFile("1", { id3Tag: { title: null } });
       const result = await store.saveFile("1");
@@ -177,6 +188,7 @@ describe("createAudioFileStore", () => {
       const updateFn = vi.fn().mockReturnValue(okAsync(p as unknown));
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: updateFn,
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       store.updateFile("1", { id3Tag: { title: null } });
       store.saveFile("1");
@@ -195,6 +207,7 @@ describe("createAudioFileStore", () => {
       const f = buildAudioFile("1");
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       store.updateFile("1", { id3Tag: { title: null } });
       expect(store.isDirty()).toBe(true);
