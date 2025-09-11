@@ -1,4 +1,10 @@
-import { errAsync, okAsync, type ResultAsync } from "neverthrow";
+import {
+  errAsync,
+  ok,
+  okAsync,
+  type Result,
+  type ResultAsync,
+} from "neverthrow";
 import {
   type Accessor,
   createContext,
@@ -8,10 +14,15 @@ import {
   useContext,
 } from "solid-js";
 import { createStore, produce, reconcile } from "solid-js/store";
-import { type UpdateAudioFile, useCommands } from "@/tauri/commands";
+import {
+  type UpdateAudioFile,
+  type UpdateAudioFiles,
+  useCommands,
+} from "@/tauri/commands";
 import {
   type AudioFile,
   type AudioFileChanges,
+  type AudioFilePatch,
   combineChanges,
 } from "../schemas";
 
@@ -55,6 +66,16 @@ export interface AudioFileStore {
   saveFile: (id: string) => ResultAsync<AudioFile, string>;
 
   /**
+   * 変更されているすべての音声ファイルの変更を永続化する
+   *
+   * @returns 更新後の音声ファイル一覧、またはエラー
+   */
+  saveAllFiles: () => ResultAsync<
+    Result<AudioFile, { id: string; error: string }>[],
+    string
+  >;
+
+  /**
    * ストアの状態を新しい音声ファイル一覧でリセットする
    *
    * 未保存の変更はすべて破棄される
@@ -66,6 +87,7 @@ export interface AudioFileStore {
 
 interface AudioFileStoreConfig {
   updateAudioFileCommand: UpdateAudioFile;
+  updateAudioFilesCommand: UpdateAudioFiles;
 }
 
 interface AudioFilesState {
@@ -113,9 +135,14 @@ export const withPendingState = <T,>(
     });
 };
 
+const convertChangesToPatches = (
+  changes: Record<string, AudioFileChanges>,
+): Array<AudioFilePatch> =>
+  Object.entries(changes).map(([id, changes]) => ({ id, changes }));
+
 export const createAudioFileStore = (
   initialAudioFiles: AudioFile[],
-  { updateAudioFileCommand }: AudioFileStoreConfig,
+  { updateAudioFileCommand, updateAudioFilesCommand }: AudioFileStoreConfig,
 ): AudioFileStore => {
   const [state, setState] = createStore<AudioFilesState>({
     files: initialAudioFiles,
@@ -171,16 +198,44 @@ export const createAudioFileStore = (
         patch: { id, changes },
       }).map((newFile) => {
         // オリジナルのファイルの状態を更新し、変更内容をクリア
-        setState("files", (file) => file.id === newFile.id, reconcile(newFile));
-        setState(
-          "changes",
-          produce((prevChanges) => {
-            delete prevChanges[id];
-          }),
-        );
-
+        updateStateAfterSave(newFile);
         return newFile;
       });
+    }, [pending, setPending]);
+
+  /**
+   * 保存が成功した音声ファイルのデータを更新し、変更内容をクリアする
+   */
+  const updateStateAfterSave = (newFile: AudioFile) => {
+    setState("files", (file) => file.id === newFile.id, reconcile(newFile));
+    setState(
+      "changes",
+      produce((prevChanges) => {
+        delete prevChanges[newFile.id];
+      }),
+    );
+  };
+
+  const saveAllFiles = (): ResultAsync<
+    Result<AudioFile, { id: string; error: string }>[],
+    string
+  > =>
+    withPendingState(() => {
+      if (!isDirty()) {
+        return okAsync([]);
+      }
+
+      return ok(convertChangesToPatches(state.changes))
+        .asyncAndThen((patches) => updateAudioFilesCommand({ patches }))
+        .map((saveResults) => {
+          // 保存成功したファイルについてのstateを更新
+          const succeeded = saveResults
+            .filter((r) => r.isOk())
+            .map((r) => r.value);
+          succeeded.forEach(updateStateAfterSave);
+
+          return saveResults;
+        });
     }, [pending, setPending]);
 
   const resetWithFiles = (audioFiles: AudioFile[]) => {
@@ -199,6 +254,7 @@ export const createAudioFileStore = (
 
     updateFile,
     saveFile,
+    saveAllFiles,
     resetWithFiles,
   };
 };
@@ -206,9 +262,10 @@ export const createAudioFileStore = (
 const AudioFileStoreContext = createContext<AudioFileStore>();
 
 export const AudioFileStoreProvider: ParentComponent = (props) => {
-  const { updateAudioFile } = useCommands();
+  const { updateAudioFile, updateAudioFiles } = useCommands();
   const audioFileStore = createAudioFileStore([], {
     updateAudioFileCommand: updateAudioFile,
+    updateAudioFilesCommand: updateAudioFiles,
   });
 
   return (

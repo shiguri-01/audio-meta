@@ -38,6 +38,18 @@ pub struct AudioFilePatchDTO {
     pub changes: AudioFileChangesDTO,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "success", rename_all = "camelCase")]
+pub enum AudioFileSaveResultDTO {
+    #[serde(rename = "true")]
+    Ok {
+        id: Uuid,
+        file: crate::use_case::dto::AudioFileDTO,
+    },
+    #[serde(rename = "false")]
+    Err { id: Uuid, error: String },
+}
+
 impl AudioFileChanges {
     pub fn from(dto: AudioFileChangesDTO) -> Result<AudioFileChanges, ValidationError> {
         let path = dto

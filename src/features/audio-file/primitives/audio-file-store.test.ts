@@ -1,6 +1,13 @@
 /** @vitest-environment jsdom */
 
-import { errAsync, okAsync } from "neverthrow";
+import {
+  err,
+  errAsync,
+  ok,
+  okAsync,
+  type Result,
+  ResultAsync,
+} from "neverthrow";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Album, Artists, AudioFile, Path, Title } from "../schemas";
 import { createAudioFileStore } from "./audio-file-store";
@@ -22,6 +29,7 @@ const buildAudioFile = (
   }) as unknown as AudioFile;
 
 const createMockUpdateCommand = () => vi.fn();
+const createMockUpdateMultipleCommand = () => vi.fn();
 
 describe("createAudioFileStore", () => {
   beforeEach(() => {
@@ -32,6 +40,7 @@ describe("createAudioFileStore", () => {
     it("初期化時に空の状態で作成される", () => {
       const store = createAudioFileStore([], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       expect(store.originalFiles()).toEqual([]);
       expect(store.isDirty()).toBe(false);
@@ -44,6 +53,7 @@ describe("createAudioFileStore", () => {
       const f1 = buildAudioFile("1", "Old Title", "Old Album");
       const store = createAudioFileStore([f1], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
 
       store.updateFile("1", {
@@ -58,6 +68,7 @@ describe("createAudioFileStore", () => {
       const f1 = buildAudioFile("1", "T", "A");
       const store = createAudioFileStore([f1], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
 
       store.updateFile("1", { id3Tag: { title: null } });
@@ -76,6 +87,7 @@ describe("createAudioFileStore", () => {
       const f = buildAudioFile("1");
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       store.updateFile("1", () => ({ id3Tag: { title: null } }));
       expect(store.changes()["1"].id3Tag?.title).toBeNull();
@@ -85,6 +97,7 @@ describe("createAudioFileStore", () => {
       const f = buildAudioFile("1");
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       store.updateFile("1", { id3Tag: { title: null, album: null } });
       store.updateFile("1", (prev) => {
@@ -102,6 +115,7 @@ describe("createAudioFileStore", () => {
       const f = buildAudioFile("1");
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       expect(store.isDirty()).toBe(false);
       expect(store.isFileDirty("1")).toBe(false);
@@ -119,6 +133,7 @@ describe("createAudioFileStore", () => {
       const updateFn = vi.fn().mockReturnValue(okAsync(updatedFile));
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: updateFn,
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
 
       store.updateFile("1", { id3Tag: { title: "New" as unknown as Title } });
@@ -138,6 +153,7 @@ describe("createAudioFileStore", () => {
       const updateFn = vi.fn();
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: updateFn,
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       const result = await store.saveFile("1");
       expect(result.isOk()).toBe(true);
@@ -147,7 +163,8 @@ describe("createAudioFileStore", () => {
 
     it("存在しないIDをsaveFileするとエラーを返す", async () => {
       const store = createAudioFileStore([], {
-        updateAudioFileCommand: vi.fn(),
+        updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       const result = await store.saveFile("x");
       expect(result.isErr()).toBe(true);
@@ -159,6 +176,7 @@ describe("createAudioFileStore", () => {
       const updateFn = vi.fn().mockReturnValue(errAsync("API Error"));
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: updateFn,
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       store.updateFile("1", { id3Tag: { title: null } });
       const result = await store.saveFile("1");
@@ -170,13 +188,17 @@ describe("createAudioFileStore", () => {
     it("saveFileを並行実行しようとすると二重実行が防止される", async () => {
       const f = buildAudioFile("1");
       // 1回目の実行が手動で解決するまで保留状態になるようにする
-      let resolveFn: (v: unknown) => void = () => {};
-      const p: Promise<unknown> = new Promise((res) => {
-        resolveFn = res;
+      type ResolveAudio = (value: AudioFile | PromiseLike<AudioFile>) => void;
+      let resolveFn: ResolveAudio = () => {};
+      const p: Promise<AudioFile> = new Promise((res) => {
+        resolveFn = res as ResolveAudio;
       });
-      const updateFn = vi.fn().mockReturnValue(okAsync(p as unknown));
+      const updateFn = vi
+        .fn()
+        .mockReturnValue(ResultAsync.fromPromise(p, () => "API Error"));
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: updateFn,
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       store.updateFile("1", { id3Tag: { title: null } });
       store.saveFile("1");
@@ -190,11 +212,137 @@ describe("createAudioFileStore", () => {
     });
   });
 
+  describe("saveAllFiles", () => {
+    it("差分なしのsaveAllFilesではコマンドを呼び出さず空配列を返す", async () => {
+      const f = buildAudioFile("1");
+      const updateMultipleFn = vi.fn();
+      const store = createAudioFileStore([f], {
+        updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: updateMultipleFn,
+      });
+
+      const result = await store.saveAllFiles();
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) expect(result.value).toEqual([]);
+      expect(updateMultipleFn).not.toHaveBeenCalled();
+    });
+
+    it("全件成功時はファイルが更新されchangesがクリアされる", async () => {
+      const f1 = buildAudioFile("1", "Old1", "Alb1", ["A1"]);
+      const f2 = buildAudioFile("2", "Old2", "Alb2", ["A2"]);
+      const updated1 = buildAudioFile("1", "New1", "Alb1", ["A1"]);
+      const updated2 = buildAudioFile("2", "New2", "Alb2", ["A2"]);
+      const updateMultipleFn = vi
+        .fn()
+        .mockReturnValue(okAsync([ok(updated1), ok(updated2)]));
+
+      const store = createAudioFileStore([f1, f2], {
+        updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: updateMultipleFn,
+      });
+
+      store.updateFile("1", { id3Tag: { title: "New1" as unknown as Title } });
+      store.updateFile("2", { id3Tag: { title: "New2" as unknown as Title } });
+
+      const result = await store.saveAllFiles();
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        const values = result.value;
+        expect(values.every((r) => r.isOk())).toBe(true);
+      }
+
+      // 呼び出し引数（patches）を検証
+      expect(updateMultipleFn).toHaveBeenCalledTimes(1);
+      const callArg = updateMultipleFn.mock.calls[0][0];
+      expect(callArg.patches).toEqual(
+        expect.arrayContaining([
+          { id: "1", changes: { id3Tag: { title: "New1" } } },
+          { id: "2", changes: { id3Tag: { title: "New2" } } },
+        ]),
+      );
+
+      // state 更新とchangesクリア
+      const files = store.originalFiles();
+      const byId = Object.fromEntries(files.map((f) => [f.id, f]));
+      expect(byId["1"].id3Tag.title).toBe("New1");
+      expect(byId["2"].id3Tag.title).toBe("New2");
+      expect(store.changes()).toEqual({});
+      expect(store.isDirty()).toBe(false);
+    });
+
+    it("一部失敗時は成功分のみstate更新され、失敗分のchangesは残る", async () => {
+      const f1 = buildAudioFile("1", "Old1", "Alb1", ["A1"]);
+      const f2 = buildAudioFile("2", "Old2", "Alb2", ["A2"]);
+      const updated1 = buildAudioFile("1", "New1", "Alb1", ["A1"]);
+      const updateMultipleFn = vi
+        .fn()
+        .mockReturnValue(
+          okAsync([ok(updated1), err({ id: "2", error: "API Error" })]),
+        );
+
+      const store = createAudioFileStore([f1, f2], {
+        updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: updateMultipleFn,
+      });
+
+      store.updateFile("1", { id3Tag: { title: "New1" as unknown as Title } });
+      store.updateFile("2", { id3Tag: { title: "New2" as unknown as Title } });
+
+      const result = await store.saveAllFiles();
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        const [r1, r2] = result.value;
+        expect(r1.isOk()).toBe(true);
+        expect(r2.isErr()).toBe(true);
+        if (r2.isErr())
+          expect(r2.error).toEqual({ id: "2", error: "API Error" });
+      }
+
+      const files = store.originalFiles();
+      const byId = Object.fromEntries(files.map((f) => [f.id, f]));
+      // 1のみ更新・2は元のまま
+      expect(byId["1"].id3Tag.title).toBe("New1");
+      expect(byId["2"].id3Tag.title).toBe("Old2");
+      // 2のchangesは残る
+      expect(store.changes()["2"]).toEqual({ id3Tag: { title: "New2" } });
+      expect(store.isDirty()).toBe(true);
+    });
+
+    it("saveAllFilesの並行実行は防止される", async () => {
+      const f = buildAudioFile("1");
+      type SaveMany = Result<AudioFile, { id: string; error: string }>[];
+      type ResolveMany = (value: SaveMany | PromiseLike<SaveMany>) => void;
+      let resolveFn: ResolveMany = () => {};
+      const p: Promise<SaveMany> = new Promise((res) => {
+        resolveFn = res as ResolveMany;
+      });
+      const updateMultipleFn = vi
+        .fn()
+        .mockReturnValue(ResultAsync.fromPromise(p, () => "API Error"));
+
+      const store = createAudioFileStore([f], {
+        updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: updateMultipleFn,
+      });
+      store.updateFile("1", { id3Tag: { title: null } });
+
+      store.saveAllFiles();
+      const second = await store.saveAllFiles();
+      expect(second.isErr()).toBe(true);
+      if (second.isErr())
+        expect(second.error).toBe("Another operation is in progress");
+
+      // 解放
+      resolveFn([]);
+    });
+  });
+
   describe("resetWithFiles", () => {
     it("resetWithFilesでファイルが差し替えられchangesがクリアされる", () => {
       const f = buildAudioFile("1");
       const store = createAudioFileStore([f], {
         updateAudioFileCommand: createMockUpdateCommand(),
+        updateAudioFilesCommand: createMockUpdateMultipleCommand(),
       });
       store.updateFile("1", { id3Tag: { title: null } });
       expect(store.isDirty()).toBe(true);

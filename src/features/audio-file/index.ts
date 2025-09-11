@@ -3,6 +3,7 @@
 // Components
 export * from "./components/AudioFileEditorTable";
 export * from "./components/DirectorySelector";
+export * from "./components/SaveAllButton";
 
 // Providers
 export {
