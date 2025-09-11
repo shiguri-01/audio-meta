@@ -71,7 +71,7 @@ async fn update_audio_file(
 async fn update_audio_files(
     state: tauri::State<'_, AppState>,
     patches: Vec<AudioFilePatchDTO>,
-) -> Result<Vec<AudioFileSaveResultDTO>, String> {
+) -> Result<Vec<AudioFileSaveResultDTO>, ApplicationError> {
     let mut repository = state.audio_file_repository.lock().await;
 
     let mut results = Vec::with_capacity(patches.len());
