@@ -48,8 +48,8 @@ describe("createAudioFileStore", () => {
     });
   });
 
-  describe("updateFile: オブジェクト指定", () => {
-    it("同一値をupdateFileしても差分として保持される", () => {
+  describe("updateFile", () => {
+    it("元のファイルと同じ値でupdateFileすると差分は作成されない", () => {
       const f1 = buildAudioFile("1", "Old Title", "Old Album");
       const store = createAudioFileStore([f1], {
         updateAudioFileCommand: createMockUpdateCommand(),
@@ -59,9 +59,8 @@ describe("createAudioFileStore", () => {
       store.updateFile("1", {
         id3Tag: { title: f1.id3Tag.title, album: f1.id3Tag.album },
       });
-      // NOTE: ここでは同値なので本来は差分消去ロジックTODOが効けば登録されない想定。現在はそのまま格納される。挙動をそのままテスト。
-      expect(store.changes()["1"].id3Tag?.title).toBe(f1.id3Tag.title);
-      expect(store.isDirty()).toBe(true);
+      expect(store.changes()["1"]).toBeUndefined();
+      expect(store.isDirty()).toBe(false);
     });
 
     it("既存差分がある状態でartistsを更新すると配列が上書きされる", () => {
@@ -80,9 +79,7 @@ describe("createAudioFileStore", () => {
       expect(c.id3Tag?.title).toBeNull();
       expect(c.id3Tag?.artists).toEqual(["New Artist"]);
     });
-  });
 
-  describe("updateFile", () => {
     it("関数指定のupdateFileで差分を設定できる", () => {
       const f = buildAudioFile("1");
       const store = createAudioFileStore([f], {
