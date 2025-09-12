@@ -19,6 +19,7 @@ import {
   type UpdateAudioFiles,
   useCommands,
 } from "@/tauri/commands";
+import { createDiff, isEmpty } from "@/utils/object";
 import {
   type AudioFile,
   type AudioFileChanges,
@@ -95,19 +96,16 @@ interface AudioFilesState {
   changes: Record<string, AudioFileChanges>;
 }
 
-const hasEffectiveChanges = (
-  changes: AudioFileChanges | undefined,
-): boolean => {
-  if (!changes) return false;
-  if (typeof changes.path !== "undefined") return true;
-  const tag = changes.id3Tag;
-  return !!(
-    tag &&
-    (typeof tag.title !== "undefined" ||
-      typeof tag.artists !== "undefined" ||
-      typeof tag.album !== "undefined")
-  );
-};
+/**
+ * 変更内容から元のファイルとの差分のみを抽出する
+ */
+const extractEffectiveChanges = (
+  changes: AudioFileChanges,
+  baseFile: AudioFile,
+): AudioFileChanges => createDiff(changes, baseFile);
+
+const hasEffectiveChanges = (changes: AudioFileChanges | undefined): boolean =>
+  changes !== undefined && !isEmpty(changes);
 
 /**
  * pending状態の管理を伴う非同期処理をおこなう関数を作成する
@@ -161,7 +159,6 @@ export const createAudioFileStore = (
     id: string,
     updater: AudioFileChanges | ((prev: AudioFileChanges) => AudioFileChanges),
   ) => {
-    // TODO: 実質的に変更がない場合、changesの項目を消去する（ファイル単位・1つのプロパティ単位）
     const prevChanges = state.changes[id] ?? {};
     const newChanges =
       typeof updater === "function"
@@ -170,8 +167,13 @@ export const createAudioFileStore = (
         : // オブジェクトの場合：既存の変更内容と新しい変更内容をマージする
           combineChanges(prevChanges, updater);
 
-    if (hasEffectiveChanges(newChanges)) {
-      setState("changes", id, reconcile(newChanges));
+    const baseFile = state.files.find((file) => file.id === id);
+    const optimizedChanges = baseFile
+      ? extractEffectiveChanges(newChanges, baseFile)
+      : newChanges;
+
+    if (hasEffectiveChanges(optimizedChanges)) {
+      setState("changes", id, reconcile(optimizedChanges));
     } else {
       setState(
         "changes",
