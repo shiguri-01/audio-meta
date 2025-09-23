@@ -93,7 +93,12 @@ impl Deref for PathDTO {
 
 impl From<AudioFilePath> for PathDTO {
     fn from(path: AudioFilePath) -> Self {
-        Self(path.as_ref().to_string_lossy().to_string())
+        Self(
+            path.as_ref()
+                .to_string_lossy()
+                .to_string()
+                .replace("\\", "/"),
+        )
     }
 }
 
