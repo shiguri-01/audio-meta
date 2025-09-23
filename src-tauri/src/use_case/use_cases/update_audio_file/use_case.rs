@@ -27,7 +27,7 @@ impl<'a> UpdateAudioFileUseCase<'a> {
             },
         )?;
 
-        let changes = AudioFileChanges::from(patch_dto.changes)?;
+        let changes = AudioFileChanges::try_from(patch_dto.changes)?;
         let updated_audio_file = audio_file.apply_changes(&changes);
 
         self.repository.save(&updated_audio_file).await?;

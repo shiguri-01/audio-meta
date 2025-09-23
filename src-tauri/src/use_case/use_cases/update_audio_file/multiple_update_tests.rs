@@ -44,7 +44,7 @@ async fn test_update_audio_files_mixed_results() {
         match use_case.execute(patch).await {
             Ok(audio_file) => results.push(AudioFileSaveResultDTO::Ok {
                 id,
-                file: AudioFileDTO::from(&audio_file),
+                file: AudioFileDTO::from(audio_file),
             }),
             Err(e) => results.push(AudioFileSaveResultDTO::Err {
                 id,
