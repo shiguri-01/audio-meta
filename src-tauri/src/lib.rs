@@ -60,10 +60,7 @@ async fn update_audio_file(
     let mut repository = state.audio_file_repository.lock().await;
     let mut use_case = UpdateAudioFileUseCase::new(&mut repository);
 
-    use_case
-        .execute(patch)
-        .await
-        .map(|audio_file| AudioFileDTO::from(&audio_file))
+    use_case.execute(patch).await.map(AudioFileDTO::from)
 }
 
 // TODO: 並列化する
@@ -82,7 +79,7 @@ async fn update_audio_files(
             Ok(audio_file) => {
                 results.push(AudioFileSaveResultDTO::Ok {
                     id,
-                    file: AudioFileDTO::from(&audio_file),
+                    file: AudioFileDTO::from(audio_file),
                 });
             }
             Err(e) => {
@@ -105,10 +102,8 @@ async fn scan_directory(
     let mut repository = state.audio_file_repository.lock().await;
     let mut use_case = ScanDirectoryUseCase::new(&mut repository);
 
-    use_case.execute(Path::new(&dir)).await.map(|audio_files| {
-        audio_files
-            .into_iter()
-            .map(|audio_file| AudioFileDTO::from(&audio_file))
-            .collect()
-    })
+    use_case
+        .execute(Path::new(&dir))
+        .await
+        .map(|audio_files| audio_files.into_iter().map(AudioFileDTO::from).collect())
 }

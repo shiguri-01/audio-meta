@@ -50,39 +50,44 @@ pub enum AudioFileSaveResultDTO {
     Err { id: Uuid, error: String },
 }
 
-impl AudioFileChanges {
-    pub fn from(dto: AudioFileChangesDTO) -> Result<AudioFileChanges, ValidationError> {
+impl TryFrom<AudioFileChangesDTO> for AudioFileChanges {
+    type Error = ValidationError;
+
+    fn try_from(dto: AudioFileChangesDTO) -> Result<Self, Self::Error> {
         let path = dto
             .path
             .map(|p| AudioFilePath::new(PathBuf::from(p)))
             .transpose()?;
-        let id3_tag = dto.id3_tag.map(id3::Id3TagChanges::from).transpose()?;
+        let id3_tag = dto.id3_tag.map(id3::Id3TagChanges::try_from).transpose()?;
 
         Ok(AudioFileChanges { path, id3_tag })
     }
 }
 
-impl id3::Id3TagChanges {
-    fn from(dto: Id3TagChangesDTO) -> Result<id3::Id3TagChanges, ValidationError> {
-        let title = dto
-            .title
-            .map(|nullable| nullable.map(|t| id3::Title::new(t.as_str())).transpose())
-            .transpose()?;
-        let artists = dto
-            .artists
-            .map(|nullable| {
-                nullable
-                    .map(|a| {
-                        let str_refs: Vec<&str> = a.iter().map(|s| s.as_str()).collect();
-                        id3::Artists::from_str_vec(&str_refs)
-                    })
-                    .transpose()
-            })
-            .transpose()?;
-        let album = dto
-            .album
-            .map(|nullable| nullable.map(|a| id3::Album::new(a.as_str())).transpose())
-            .transpose()?;
+impl TryFrom<Id3TagChangesDTO> for id3::Id3TagChanges {
+    type Error = ValidationError;
+
+    fn try_from(dto: Id3TagChangesDTO) -> Result<Self, Self::Error> {
+        let title = match dto.title {
+            None => None,
+            Some(None) => Some(None),
+            Some(Some(title_string)) => Some(Some(id3::Title::new(&title_string)?)),
+        };
+
+        let artists = match dto.artists {
+            None => None,
+            Some(None) => Some(None),
+            Some(Some(artist_vec)) => {
+                let str_refs: Vec<&str> = artist_vec.iter().map(|s| s.as_str()).collect();
+                Some(Some(id3::Artists::from_str_vec(&str_refs)?))
+            }
+        };
+
+        let album = match dto.album {
+            None => None,
+            Some(None) => Some(None),
+            Some(Some(album_string)) => Some(Some(id3::Album::new(&album_string)?)),
+        };
 
         Ok(id3::Id3TagChanges {
             title,
