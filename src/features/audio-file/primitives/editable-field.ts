@@ -1,5 +1,5 @@
 import type { Result } from "neverthrow";
-import { type Accessor, batch, createEffect, createSignal } from "solid-js";
+import { type Accessor, batch, createEffect, createSignal, on } from "solid-js";
 
 export interface EditSessionControl {
   isEditing: Accessor<boolean>;
@@ -107,9 +107,7 @@ export const createFormattedInput = <TValue>(
   };
 
   // 外部でvalueが変更されたら入力値をリセットする
-  createEffect(() => {
-    reset();
-  });
+  createEffect(on(value, () => reset(), { defer: true }));
 
   return {
     inputValue,
