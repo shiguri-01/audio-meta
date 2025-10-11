@@ -1,14 +1,14 @@
 import type { Result } from "neverthrow";
 import { type Accessor, batch, createEffect, createSignal } from "solid-js";
 
-export interface EditSessionConrol {
+export interface EditSessionControl {
   isEditing: Accessor<boolean>;
   begin: () => void;
   commit: () => void;
   cancel: () => void;
 }
 
-export interface CreateEditSessionConrolOptions {
+export interface CreateEditSessionControlOptions {
   onBegin?: () => void;
   onCommit?: () => void;
   onCancel?: () => void;
@@ -29,8 +29,8 @@ export type CreateFormattedInputOptions<TValue> = {
 };
 
 export const createEditSessionConrol = (
-  options: CreateEditSessionConrolOptions = {},
-): EditSessionConrol => {
+  options: CreateEditSessionControlOptions = {},
+): EditSessionControl => {
   const [isEditing, setIsEditing] = createSignal(false);
 
   const begin = () => {
